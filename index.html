@@ -164,6 +164,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
     <div class="card need" hidden><p>ยังไม่ได้เชื่อมต่อ Google Sheet</p><button class="btn pri goSet">ไปที่ตั้งค่า</button></div>
     <form id="fIn" autocomplete="off" hidden>
       <div class="seg" id="inType" role="tablist" aria-label="ประเภทรายการ"></div>
+      <button type="button" class="btn sm" id="openRecon" style="width:100%;margin-bottom:8px">🔍 ตรวจยอดกระเป๋าเทียบกับแอปจริง</button>
       <div class="amt"><span>¥</span><input id="inAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div>
       <div id="fLine">
         <label class="l" for="inCat">หมวดหลัก</label>
@@ -271,6 +272,31 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
   </div>
 </div>
 
+<!-- check a wallet against its real balance -->
+<div class="modal" id="mRecon" role="dialog" aria-modal="true" aria-labelledby="rcT">
+  <div class="sheet">
+    <h1 id="rcT">ตรวจยอดกระเป๋า</h1>
+    <label class="l" for="rcAcc">กระเป๋า / บัญชี</label>
+    <select class="f" id="rcAcc"></select>
+    <label class="l" for="rcReal">ยอดจริงที่เห็นในแอป</label>
+    <div class="amt"><span>¥</span><input id="rcReal" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="ยอดจริง"></div>
+    <div class="lineinfo" id="rcDiff" hidden></div>
+    <div id="rcWhy" hidden>
+      <label class="l">ส่วนต่างนี้คืออะไร</label>
+      <div class="chips" id="rcKind"></div>
+      <div id="rcLineW" hidden>
+        <label class="l" for="rcCat">หมวดหลัก</label><select class="f" id="rcCat"></select>
+        <label class="l" for="rcLine">รายการย่อย</label><select class="f" id="rcLine"></select>
+      </div>
+      <div id="rcSrcW" hidden><label class="l" for="rcSrc">เติมมาจากบัญชี</label><select class="f" id="rcSrc"></select></div>
+    </div>
+    <label class="l" for="rcNote">หมายเหตุ (ไม่บังคับ)</label>
+    <input class="f" id="rcNote" placeholder="เช่น ขนมที่ลืมบันทึก, แต้มคืน">
+    <div class="err" id="rcErr" role="alert"></div>
+    <div class="bar2"><button type="button" class="btn" id="rcCancel" style="flex:1">ยกเลิก</button><button type="button" class="btn pri" id="rcOk" style="flex:2">ตรวจรายการก่อนบันทึก</button></div>
+  </div>
+</div>
+
 <!-- edit a saved entry -->
 <div class="modal" id="mEdit" role="dialog" aria-modal="true" aria-labelledby="edT">
   <div class="sheet">
@@ -307,7 +333,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
 const KEY = 'expenseTracker.v5';
 const SCHEMA = 2;
 const TYPES = [['expense','จ่าย'],['transfer','ย้ายเงิน'],['income','รับเงิน'],['one_time','จ่ายจากกอง']];
-const TYPE_NAME = Object.fromEntries(TYPES);
+const TYPE_NAME = Object.assign(Object.fromEntries(TYPES), {adjust:'ปรับยอด'});
 const TRANSFER_PRESETS = [
   {name:'กดเงินสด', from:'yucho', to:'cash'}, {name:'เติม Co-op', from:'cash', to:'coop'},
   {name:'ชาร์จ Rakuten Pay', from:'cash', to:'rakutenpay'}, {name:'เติม PayPay', from:'yucho', to:'paypay'}];
@@ -352,7 +378,7 @@ const TH_MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','�
 const fmtDT = s => { const d = parseTs(s); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const fmtDay = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)} (${DOW[d.getDay()]})`;
 const parseAmt = v => { const s = String(v).replace(/[,\s¥]/g,''); return /^\d+$/.test(s) ? parseInt(s,10) : NaN; };
-const isMove = it => it.type === 'transfer' || it.type === 'income';     // moves money, not spending
+const isMove = it => it.type === 'transfer' || it.type === 'income' || it.type === 'adjust';     // not spending
 const dayMs = 864e5;
 const dOnly = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
 
@@ -570,13 +596,17 @@ $('#fIn').onsubmit = e => {
   e.preventDefault();
   const r = draftFromForm();
   $('#inErr').textContent = r.err || ''; if(r.err) return;
-  draft = r.item;
-  const it = draft, D0 = localDelta(), D1 = localDelta(it);
+  showReview(r.item, true);
+};
+let draftFromForm_ = false;
+function showReview(it, fromForm){
+  draft = it; draftFromForm_ = !!fromForm;
+  const D0 = localDelta(), D1 = localDelta(it);
   const rows = [['ประเภท', TYPE_NAME[it.type]], ['ยอด', `<span class="amtv">${yen(it.amount)}</span>`]];
   if(it.type === 'expense'){ const l = lineOf(it.lineId); rows.push(['รายการงบ', `${esc(l.category)} · ${esc(l.item)}`]); }
   else rows.push(['รายการ', esc(it.category)]);
-  if(it.from) rows.push([it.type === 'transfer' ? 'จากบัญชี' : 'จ่ายจาก', esc(accName(it.from))]);
-  if(it.to) rows.push(['ไปบัญชี', esc(accName(it.to))]);
+  if(it.from) rows.push([it.type === 'transfer' ? 'จากบัญชี' : it.type === 'adjust' ? 'ลดยอดบัญชี' : 'จ่ายจาก', esc(accName(it.from))]);
+  if(it.to) rows.push([it.type === 'adjust' ? 'เพิ่มยอดบัญชี' : 'ไปบัญชี', esc(accName(it.to))]);
   if(it.fromFund) rows.push(['จากกอง', esc(fundName(it.fromFund))]);
   if(it.toFund) rows.push(['เข้ากอง', esc(fundName(it.toFund))]);
   rows.push(['วันเวลา', esc(fmtDT(it.ts))]);
@@ -598,7 +628,7 @@ $('#fIn').onsubmit = e => {
   $('#rvImpact').innerHTML = imp.map(([k,v]) => `<div><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('');
   $('#rvImpact').hidden = !imp.length;
   openM('#mReview');
-};
+}
 $('#rvBack').onclick = () => closeM('#mReview');
 $('#rvOk').onclick = () => {
   if(!draft) return;
@@ -606,9 +636,11 @@ $('#rvOk').onclick = () => {
   db.items.push({id:uid(), ...draft, sync:'pending', createdAt:now, updatedAt:now});
   if(!persist()) return;
   const saved = draft; draft = null; closeM('#mReview');
-  $('#inAmt').value = ''; $('#inNote').value = '';
-  sx.event = ''; if(sx.type !== 'transfer') sx.fund = '';
-  if((lineGroups()[sx.cat] || []).length !== 1) sx.line = null;
+  if(draftFromForm_){                     // a wallet check leaves the half-filled form alone
+    $('#inAmt').value = ''; $('#inNote').value = '';
+    sx.event = ''; if(sx.type !== 'transfer') sx.fund = '';
+    if((lineGroups()[sx.cat] || []).length !== 1) sx.line = null;
+  }
   renderAll();
   toast(`บันทึกในเครื่องแล้ว: ${saved.category} ${yen(saved.amount)} · รอส่ง ${queueSize()} รายการ`);
 };
@@ -617,7 +649,7 @@ $('#rvOk').onclick = () => {
 const ERRORS = {unauthorized:'TOKEN ไม่ถูกต้อง', busy:'ชีตกำลังทำงานอยู่ ลองใหม่อีกครั้ง', bad_json:'ข้อมูลที่ส่งเสียหาย', server:'ชีตเกิดข้อผิดพลาด'};
 const REJECT = {bad_line:'รายการงบไม่มีในชีต', bad_from_account:'บัญชีที่จ่ายไม่มีในชีต', bad_to_account:'บัญชีที่รับไม่มีในชีต',
   bad_account:'บัญชีไม่มีในชีต', same_account:'บัญชีต้นทางกับปลายทางเดียวกัน', bad_fund:'กองไม่มีในชีต', bad_event:'เหตุการณ์ไม่มีในชีต',
-  bad_amount:'ยอดเงินไม่ถูกต้อง', bad_ts:'วันเวลาไม่ถูกต้อง', bad_type:'ประเภทไม่ถูกต้อง', bad_id:'รหัสรายการไม่ถูกต้อง'};
+  bad_amount:'ยอดเงินไม่ถูกต้อง', bad_adjust:'การปรับยอดต้องมีบัญชีเดียว (ชีตยังไม่ได้อัปเดต Apps Script?)', bad_ts:'วันเวลาไม่ถูกต้อง', bad_type:'ประเภทไม่ถูกต้อง', bad_id:'รหัสรายการไม่ถูกต้อง'};
 let busy = false;
 const toPayload = it => ({id:it.id, ts:it.ts, type:it.type, line_id:it.lineId || '', amount:it.amount,
   from_account: it.type === 'income' ? '' : (it.from || ''), to_account:it.to || '', from_fund:it.fromFund || '',
@@ -713,6 +745,81 @@ document.addEventListener('visibilitychange', () => {
   if(Date.now() - last > 60000) pull(true);           // refresh budgets when the app comes back; never sends
 });
 
+/* ================= Wallet check =================
+   Compare the balance the app has worked out with the one the wallet app shows, then record
+   the difference: a forgotten expense (counts against a budget item the user picks each time),
+   a forgotten top-up (a transfer), or a plain adjustment such as points back (not spending). */
+const rc = {acc:'', kind:'', cat:'', line:''};
+function openRecon(acc){
+  if(!ready()) return;
+  Object.assign(rc, {acc: acc || rc.acc || (accList()[0] || {}).id || '', kind:'', cat:'', line:''});
+  $('#rcReal').value = ''; $('#rcNote').value = ''; $('#rcErr').textContent = '';
+  renderRecon(); openM('#mRecon'); $('#rcReal').focus();
+}
+function reconDiff(){
+  const a = accList().find(x => x.id === rc.acc), real = $('#rcReal').value === '' ? NaN : parseAmt($('#rcReal').value);
+  if(!a || isNaN(real)) return null;
+  const calc = accBal(a, localDelta());
+  return {a, calc, real, d: real - calc};
+}
+function renderRecon(){
+  const D = localDelta(), r = reconDiff();
+  $('#rcAcc').innerHTML = accOpts(rc.acc, D, '', '');
+  const box = $('#rcDiff');
+  box.hidden = !r;
+  $('#rcWhy').hidden = !r || r.d === 0;
+  if(!r){ $('#rcOk').disabled = true; return; }
+  box.innerHTML = r.d === 0
+    ? `<small>${esc(r.a.name)}</small><div class="big2">ยอดตรงกันแล้ว ✓</div><small>แอปคำนวณได้ ${yen(r.calc)} เท่ากับยอดจริง</small>`
+    : `<small>แอปคำนวณได้ ${yen(r.calc)} · ยอดจริง ${yen(r.real)}</small><div class="big2 ${r.d < 0 ? 'over-t' : ''}">ต่างกัน ${r.d > 0 ? '+' : '−'}${yen(Math.abs(r.d))}</div>
+       <small>${r.d < 0 ? 'ยอดจริงน้อยกว่าที่บันทึก' : 'ยอดจริงมากกว่าที่บันทึก'}</small>`;
+  $('#rcOk').disabled = false; $('#rcOk').textContent = r.d === 0 ? 'ปิด' : 'ตรวจรายการก่อนบันทึก';
+  if(r.d === 0) return;
+  const kinds = r.d < 0 ? [['forgot','ลืมบันทึกรายจ่าย (นับเข้างบ)'], ['adjust','ปรับยอดเฉยๆ (ไม่นับเข้างบ)']]
+                        : [['topup','ลืมบันทึกการเติมเงิน'], ['adjust','ปรับยอดเฉยๆ เช่น แต้มคืน']];
+  if(!kinds.some(k => k[0] === rc.kind)) rc.kind = '';
+  $('#rcKind').innerHTML = kinds.map(([k,n]) => `<button type="button" class="chip${rc.kind===k?' on':''}" data-k="${k}">${n}</button>`).join('');
+  $('#rcLineW').hidden = rc.kind !== 'forgot';
+  $('#rcSrcW').hidden = rc.kind !== 'topup';
+  if(rc.kind === 'forgot'){                     // no default item: picked by hand every time
+    const groups = lineGroups(); if(rc.cat && !groups[rc.cat]) rc.cat = '';
+    $('#rcCat').innerHTML = '<option value="">เลือกหมวด</option>' + Object.keys(groups).map(g => `<option value="${esc(g)}"${rc.cat===g?' selected':''}>${esc(g)}</option>`).join('');
+    const ls = rc.cat ? groups[rc.cat] : [];
+    $('#rcLine').disabled = !rc.cat;
+    $('#rcLine').innerHTML = `<option value="">${rc.cat ? 'เลือกรายการ' : 'เลือกหมวดก่อน'}</option>` +
+      ls.map(l => `<option value="${esc(l.id)}"${rc.line===l.id?' selected':''}>${esc(l.item)} · ${leftTxt(l.budget - lineUsed(l, D))}</option>`).join('');
+  }
+  if(rc.kind === 'topup') $('#rcSrc').innerHTML = accOpts($('#rcSrc').value, D, rc.acc, 'เลือกบัญชีต้นทาง');
+}
+$('#openRecon').onclick = () => openRecon();
+$('#dash').addEventListener('click', e => { const b = e.target.closest('[data-recon]'); if(b) openRecon(b.dataset.recon); });
+$('#rcAcc').onchange = e => { rc.acc = e.target.value; rc.kind = ''; renderRecon(); };
+$('#rcReal').oninput = () => renderRecon();
+$('#rcKind').onclick = e => { const b = e.target.closest('[data-k]'); if(!b) return; rc.kind = b.dataset.k; $('#rcErr').textContent = ''; renderRecon(); };
+$('#rcCat').onchange = e => { rc.cat = e.target.value; rc.line = ''; renderRecon(); };
+$('#rcLine').onchange = e => { rc.line = e.target.value; };
+$('#rcCancel').onclick = () => closeM('#mRecon');
+$('#rcOk').onclick = () => {
+  const r = reconDiff(); if(!r) return;
+  if(r.d === 0){ closeM('#mRecon'); toast(`${r.a.name} ยอดตรงกันแล้ว`); return; }
+  const amount = Math.abs(r.d), ts = toLocalInput(new Date()), note = $('#rcNote').value.trim() || 'จากการตรวจยอด';
+  const base = {amount, ts, note, lineId:'', from:'', to:'', fromFund:'', toFund:'', eventId:''};
+  let it = null;
+  if(rc.kind === 'forgot'){
+    const l = lineOf($('#rcLine').value);
+    if(!l){ $('#rcErr').textContent = 'กรุณาเลือกหมวดหลักและรายการย่อยของรายจ่ายที่ลืมบันทึก'; return; }
+    it = {...base, type:'expense', lineId:l.id, from:r.a.id, category:l.item};
+  } else if(rc.kind === 'topup'){
+    const src = $('#rcSrc').value;
+    if(!src){ $('#rcErr').textContent = 'กรุณาเลือกบัญชีที่ใช้เติมเงิน'; return; }
+    it = {...base, type:'transfer', from:src, to:r.a.id, category:`ย้ายเงิน ${accName(src)} → ${r.a.name}`};
+  } else if(rc.kind === 'adjust'){
+    it = {...base, type:'adjust', from: r.d < 0 ? r.a.id : '', to: r.d > 0 ? r.a.id : '',
+      category:`ปรับยอด ${r.a.name} (${r.d > 0 ? '+' : '−'}${yen(amount)})`};
+  } else { $('#rcErr').textContent = 'กรุณาเลือกว่าส่วนต่างนี้คืออะไร'; return; }
+  closeM('#mRecon'); showReview(it);
+};
+
 /* ================= Dashboard ================= */
 function renderDash(){
   const el = $('#dash'), c = cfg();
@@ -749,7 +856,7 @@ function renderDash(){
       </details>`).join('')}
   </div>
   <div class="card"><h2>ยอดเงินแต่ละบัญชี</h2>
-    ${c.accounts.map(a => { const b = accBal(a, D); return `<div class="drow"><div class="top"><span>${esc(a.name)}</span><span class="${b < 0 ? 'over-t' : ''}">${yen(b)}</span></div></div>`; }).join('')}
+    ${c.accounts.map(a => { const b = accBal(a, D); return `<div class="drow"><div class="top"><span>${esc(a.name)} <button class="lnk" data-recon="${esc(a.id)}">ตรวจยอด</button></span><span class="${b < 0 ? 'over-t' : ''}">${yen(b)}</span></div></div>`; }).join('')}
   </div>
   <div class="card"><h2>กองเงินเป้าหมาย</h2>
     ${c.funds.map(f => { const b = fundBal(f, D);
@@ -887,10 +994,10 @@ function openEdit(id){
   $('#edAmt').value = it.amount; $('#edNote').value = it.note || ''; setDT($('#edTime'), it.ts); $('#edErr').textContent = '';
   $('#edLineW').hidden = t !== 'expense';
   $('#edLine').innerHTML = cfg().lines.map(l => `<option value="${esc(l.id)}"${l.id===it.lineId?' selected':''}>${esc(l.category)} · ${esc(l.item)}</option>`).join('');
-  $('#edFromW').hidden = t === 'income';
+  $('#edFromW').hidden = t === 'income' || t === 'adjust';
   $('#edFromL').textContent = t === 'transfer' ? 'จากบัญชี' : 'จ่ายจาก';
   $('#edFrom').innerHTML = accOpts(it.from, D, '', 'เลือกบัญชี');
-  $('#edToW').hidden = !(t === 'transfer' || t === 'income');
+  $('#edToW').hidden = !(t === 'transfer' || t === 'income');      // an adjustment keeps its direction
   $('#edTo').innerHTML = accOpts(it.to, D, '', 'เลือกบัญชี');
   $('#edFundW').hidden = !(t === 'one_time' || t === 'income');
   $('#edFund').innerHTML = fundOpts(t === 'one_time' ? it.fromFund : it.toFund, D, t === 'one_time' ? 'เลือกกอง' : 'ไม่เข้ากอง');

@@ -15,7 +15,7 @@
 
 const TX_SHEET = 'Transactions';
 const TX_COLS = 13;            // A..M are data; N is the cycle ARRAYFORMULA, never written here
-const TYPES = ['expense', 'transfer', 'income', 'one_time', 'fund_move'];
+const TYPES = ['expense', 'transfer', 'income', 'one_time', 'fund_move', 'adjust'];
 const MAX_AMOUNT = 10000000;
 
 function setupToken() {
@@ -175,6 +175,11 @@ function validate_(t, ref) {
       break;
     case 'fund_move':
       if (!fund(t.from_fund) && !fund(t.to_fund)) return 'bad_fund';
+      break;
+    case 'adjust':                    // balance correction after checking the real wallet: exactly one side
+      if (!!t.from_account === !!t.to_account) return 'bad_adjust';
+      if (t.from_account && !acc(t.from_account)) return 'bad_from_account';
+      if (t.to_account && !acc(t.to_account)) return 'bad_to_account';
       break;
   }
   return '';
