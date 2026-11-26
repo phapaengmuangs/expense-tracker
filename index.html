@@ -116,6 +116,19 @@ li.bk .a{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 li.bk .a.nx{color:var(--sub);text-decoration:line-through dotted}
 ul.list li.mrow{grid-template-columns:minmax(0,1fr) 40px 40px 40px;gap:4px;border-bottom:0;padding:4px 0}
 .icon:disabled{opacity:.25}
+.seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--card);border-radius:12px;padding:4px;margin-bottom:10px}
+.seg button{min-height:44px;border:0;border-radius:9px;background:none;font-weight:600;font-size:14px;color:var(--sub)}
+.seg button.on{background:var(--acc);color:var(--accInk)}
+.lg{margin-top:10px}.lgh{font-size:13px;color:var(--sub);margin-bottom:4px}
+.chip.ln{display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1.25;padding:6px 12px;text-align:left}
+.chip.ln small{font-size:12px;font-weight:400;opacity:.85}
+.chip.ln.over small{color:var(--warn);opacity:1;font-weight:600}
+.chip.ln.on small{color:inherit}
+.sync{display:block;width:100%;text-align:left;border:1px solid var(--rule);background:var(--card);border-radius:10px;padding:8px 12px;font-size:14px;margin:-4px 0 12px;min-height:40px}
+.sync.warn{color:var(--warn);border-color:var(--warn)}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:14px;margin-top:6px}
+.kv .n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.kv .h{grid-column:1/-1;font-weight:600;margin-top:8px}
 hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
@@ -125,8 +138,11 @@ hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
   <!-- ============ INPUT ============ -->
   <section id="v-input" class="view on" aria-label="บันทึกใหม่">
     <h1>บันทึกรายจ่าย</h1>
+    <button type="button" class="sync" id="syncBadge" hidden></button>
     <form id="fIn" autocomplete="off">
+      <div class="seg" id="inType" hidden role="tablist" aria-label="ประเภทรายการ"></div>
       <div class="amt"><span>¥</span><input id="inAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div>
+      <div id="localFields">
       <label class="l">หมวดหมู่</label>
       <div class="cats" id="inCats"></div>
       <label class="l" for="inCustom">หรือพิมพ์หมวดอื่น</label>
@@ -134,6 +150,15 @@ hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
       <datalist id="customList"></datalist>
       <label class="l">วิธีชำระ (ไม่บังคับ)</label>
       <div class="chips" id="inMethods"></div>
+      </div>
+      <div id="sheetFields" hidden>
+        <div id="sfLine"><label class="l">รายการงบ (ตัวเลขคืองบที่เหลือในรอบนี้)</label><div id="inLines"></div></div>
+        <div id="sfPreset" class="chips" style="margin-top:14px"></div>
+        <div id="sfFrom"><label class="l" id="sfFromL">จ่ายจาก</label><div class="chips" id="inFrom"></div></div>
+        <div id="sfTo"><label class="l">ไปบัญชี</label><div class="chips" id="inTo"></div></div>
+        <div id="sfEvent"><label class="l" for="inEvent">เหตุการณ์ตามแผน (ไม่บังคับ)</label><select class="f" id="inEvent"></select></div>
+        <div id="sfFund"><label class="l" id="sfFundL">กอง</label><div class="chips" id="inFund"></div></div>
+      </div>
       <label class="l" for="inNote">หมายเหตุ (ไม่บังคับ)</label>
       <input class="f" id="inNote" placeholder="เช่น หมู, ผัก">
       <label class="l" for="inTime-d">วันและเวลา (24 ชั่วโมง)</label>
@@ -173,6 +198,17 @@ hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
   <section id="v-set" class="view" aria-label="ตั้งค่า">
     <h1>ตั้งค่าและสำรองข้อมูล</h1>
     <div class="sum" id="stInfo"></div>
+    <label class="l">เชื่อมต่อ Google Sheet</label>
+    <div class="sum" id="shStatus"></div>
+    <input class="f" id="shUrl" inputmode="url" placeholder="URL ของ Web app (https://script.google.com/macros/s/…/exec)" autocomplete="off">
+    <input class="f" id="shToken" type="password" placeholder="TOKEN จาก setupToken()" style="margin-top:8px" autocomplete="off">
+    <div class="bar2">
+      <button class="btn pri" id="shConnect">เชื่อมต่อ</button>
+      <button class="btn" id="shSync">ซิงก์ตอนนี้</button>
+      <button class="btn warn" id="shOff">ยกเลิกการเชื่อมต่อ</button>
+    </div>
+    <div id="shData"></div>
+    <hr>
     <label class="l">สำรองข้อมูล</label>
     <div class="bar2">
       <button class="btn" id="stDl">ดาวน์โหลดไฟล์สำรอง (.json)</button>
@@ -216,15 +252,16 @@ hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
     <h1 id="mEditT">แก้ไขรายการ</h1>
     <form id="fEd" autocomplete="off">
       <div class="amt"><span>¥</span><input id="edAmt" inputmode="numeric" pattern="[0-9]*" aria-label="จำนวนเงิน"></div>
-      <label class="l" for="edCat">หมวดหมู่</label>
-      <input class="f" id="edCat" list="allCatList"><datalist id="allCatList"></datalist>
-      <label class="l">วิธีชำระ</label>
+      <div id="edLocal"><label class="l" for="edCat">หมวดหมู่</label>
+      <input class="f" id="edCat" list="allCatList"><datalist id="allCatList"></datalist></div>
+      <div id="edSheet" hidden><label class="l" for="edLine">รายการงบ</label><select class="f" id="edLine"></select></div>
+      <label class="l" id="edMethodsL">วิธีชำระ</label>
       <div class="chips" id="edMethods"></div>
       <label class="l" for="edNote">หมายเหตุ</label>
       <input class="f" id="edNote">
       <label class="l" for="edTime-d">วันและเวลา (24 ชั่วโมง)</label>
       <div class="dt" id="edTime"></div>
-      <label class="l"><input type="checkbox" id="edExp"> ส่งออกแล้ว</label>
+      <label class="l" id="edExpL"><input type="checkbox" id="edExp"> ส่งออกแล้ว</label>
       <div class="err" id="edErr" role="alert"></div>
       <div class="bar2"><button type="button" class="btn" id="edCancel" style="flex:1">ยกเลิก</button><button class="btn pri" style="flex:2">บันทึกการแก้ไข</button></div>
     </form>
@@ -275,6 +312,7 @@ function migrate(d){
   d.schemaVersion = SCHEMA; d.quickCats ||= DEFAULT_CATS; d.customCats ||= [];
   d.quickCats = d.quickCats.map(c => (c[1]==='ส่วนตัว' && c[0]==='🍜') ? ['🕶️','ส่วนตัว'] : c);
   if(!Array.isArray(d.methods)) d.methods = DEFAULT_METHODS.map(m=>({...m}));
+  if(d.sheet && !Array.isArray(d.sheet.deletes)) d.sheet.deletes = [];
   // ids used by older items but missing from the list (e.g. the early 'other') are kept as hidden
   const legacy = {other:'อื่นๆ'};
   d.items.forEach(it => { if(it.method && !d.methods.some(m=>m.id===it.method)) d.methods.push({id:it.method, name:legacy[it.method]||it.method, hidden:true}); });
@@ -285,7 +323,8 @@ function persist(){
   catch(e){ toast('⚠️ บันทึกลงเครื่องไม่สำเร็จ: '+e.message); return false; }
 }
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2));
-const isWithdraw = it => it.category === WITHDRAW;
+// transfers and income move money but are not spending
+const isWithdraw = it => it.category === WITHDRAW || it.type === 'transfer' || it.type === 'income';
 
 /* ================= Helpers ================= */
 const $ = s => document.querySelector(s);
@@ -388,6 +427,7 @@ document.addEventListener('visibilitychange', () => { if(!document.hidden) refre
 $('#fIn').onsubmit = e => {
   e.preventDefault();
   const amount = parseAmt($('#inAmt').value);
+  if(sheetReady()){ submitSheet(amount); return; }
   const custom = $('#inCustom').value.trim();
   const category = inState.cat || custom;
   const ts = getDT($('#inTime'));
@@ -428,13 +468,16 @@ function range(f){
   const n = new Date(), s = new Date(n.getFullYear(), n.getMonth(), n.getDate());
   if(f==='today') return [s, new Date(n.getFullYear(), n.getMonth(), n.getDate()+1)];
   if(f==='week'){ const a = new Date(s.getFullYear(), s.getMonth(), s.getDate() - s.getDay() + 7*offset); return [a, new Date(a.getFullYear(), a.getMonth(), a.getDate()+7)]; } // Sunday–Saturday
-  if(f==='month') return [new Date(n.getFullYear(), n.getMonth()+offset, 1), new Date(n.getFullYear(), n.getMonth()+offset+1, 1)];
+  if(f==='month'){                 // a pay cycle from the start day (1 = calendar month)
+    const s0 = sd(), m0 = n.getMonth() - (n.getDate() >= s0 ? 0 : 1) + offset;
+    return [new Date(n.getFullYear(), m0, s0), new Date(n.getFullYear(), m0+1, s0)];
+  }
   return null;
 }
 function inView(){
   const r = range(filter);
   return db.items.filter(it => {
-    if(filter==='pending') return !it.exported;
+    if(filter==='pending') return notSent(it);
     if(!r) return true;
     const d = parseTs(it.ts); return d >= r[0] && d < r[1];
   });
@@ -467,7 +510,8 @@ function renderCalendar(){
   const max = Math.max(1, ...Object.values(totals));
   const last = new Date(b.getFullYear(), b.getMonth(), b.getDate()-1);
   const title = filter==='month'
-    ? `${TH_MONTH[a.getMonth()]} ${a.getFullYear()}`
+    ? (sd() > 1 ? `รอบ ${TH_MON[last.getMonth()]} ${last.getFullYear()} · ${a.getDate()} ${TH_MON[a.getMonth()]}–${last.getDate()} ${TH_MON[last.getMonth()]}`
+                : `${TH_MONTH[a.getMonth()]} ${a.getFullYear()}`)
     : `${a.getDate()} ${TH_MON[a.getMonth()]} – ${last.getDate()} ${TH_MON[last.getMonth()]} ${last.getFullYear()}`;
   // grid always starts on Sunday; month view pads the first and last week
   const g0 = new Date(a.getFullYear(), a.getMonth(), a.getDate() - a.getDay());
@@ -496,7 +540,8 @@ function renderCalendar(){
 
 function renderExport(){
   $('#exFilters').innerHTML = FILTERS.map(([k,n]) => {
-    const c = k==='pending' ? ` (${db.items.filter(i=>!i.exported).length})` : '';
+    const c = k==='pending' ? ` (${db.items.filter(notSent).length})` : '';
+    if(k==='month' && sd()>1) n = 'รอบเดือน';
     return `<button class="chip${filter===k?' on':''}" data-f="${k}" role="tab" aria-selected="${filter===k}">${n}${c}</button>`;
   }).join('');
   renderCalendar();
@@ -532,7 +577,7 @@ function renderExport(){
     <li>
       <label class="ck"><input type="checkbox" data-id="${esc(it.id)}" ${selected.has(it.id)?'checked':''} aria-label="เลือก"></label>
       <div class="it">
-        <div class="t">${esc(it.category)}${it.method?`<span class="tag">${esc(methodName(it.method))}</span>`:''}${it.exported?'<span class="tag x">ส่งแล้ว</span>':''}</div>
+        <div class="t">${esc(it.category)}${it.method?`<span class="tag">${esc(methodName(it.method))}</span>`:''}${statusTag(it)}</div>
         <div class="m">${it.ts.slice(11,16)}${it.note?' · '+esc(it.note):''}</div>
       </div>
       <div class="right">
@@ -565,8 +610,17 @@ $('#exList').onclick = e => {
   const d = e.target.closest('[data-del]'), ed = e.target.closest('[data-ed]');
   if(d){
     const idx = db.items.findIndex(i => i.id === d.dataset.del); if(idx < 0) return;
-    const [gone] = db.items.splice(idx,1); selected.delete(gone.id); persist(); renderExport();
-    toast(`ลบ ${gone.category} ${yen(gone.amount)} แล้ว`, 'เลิกทำ', () => { db.items.push(gone); persist(); renderExport(); });
+    const [gone] = db.items.splice(idx,1); selected.delete(gone.id);
+    if(gone.syncedOnce && db.sheet) db.sheet.deletes.push(gone.id);
+    persist(); renderExport(); renderSheetInput();
+    clearTimeout(delTimer); delTimer = setTimeout(syncNow, 6000);   // wait out the undo window
+    toast(`ลบ ${gone.category} ${yen(gone.amount)} แล้ว`, 'เลิกทำ', () => {
+      db.items.push(gone);
+      const q = db.sheet ? db.sheet.deletes.indexOf(gone.id) : -1;
+      if(q >= 0) db.sheet.deletes.splice(q,1);
+      else if(gone.syncedOnce) gone.sync = 'pending';             // already removed from the sheet: write it back
+      persist(); renderExport(); renderSheetInput(); syncNow();
+    });
   }
   if(ed) openEdit(ed.dataset.ed);
 };
@@ -640,7 +694,7 @@ function renderBasket(){
     if(k !== day){ day = k; const d = parseTs(k+'T00:00');
       const dt = sel.filter(i => i.ts.slice(0,10)===k && !isWithdraw(i)).reduce((s,i)=>s+i.amount,0);
       out.push(`<li class="dayh bk"><span>${fmtDay(d)} ${d.getFullYear()}</span><span class="n">${yen(dt)}</span></li>`); }
-    out.push(`<li class="bk"><div class="it"><div class="t">${esc(it.category)}${it.method?`<span class="tag">${esc(methodName(it.method))}</span>`:''}${it.exported?'<span class="tag x">ส่งแล้ว</span>':''}</div>
+    out.push(`<li class="bk"><div class="it"><div class="t">${esc(it.category)}${it.method?`<span class="tag">${esc(methodName(it.method))}</span>`:''}${statusTag(it)}</div>
       <div class="m">${it.ts.slice(11,16)}${it.note?' · '+esc(it.note):''}</div></div>
       <div class="a${isWithdraw(it)?' nx':''}">${yen(it.amount)}</div>
       <button class="icon" data-rm="${esc(it.id)}" aria-label="เอาออกจากตะกร้า">✕</button></li>`);
@@ -670,21 +724,48 @@ function openEdit(id){
   $('#edAmt').value = it.amount; $('#edCat').value = it.category; $('#edNote').value = it.note || '';
   setDT($('#edTime'), it.ts); $('#edExp').checked = it.exported; $('#edErr').textContent = '';
   $('#allCatList').innerHTML = [...db.quickCats.map(c=>c[1]), ...db.customCats].map(c => `<option value="${esc(c)}">`).join('');
-  renderMethods($('#edMethods'), edMethod);
+  const sheetItem = !!it.type;
+  $('#edLocal').hidden = sheetItem; $('#edExpL').hidden = sheetItem;
+  $('#edSheet').hidden = !(sheetItem && it.type === 'expense' && cfg());
+  if(sheetItem && it.type === 'expense' && cfg())
+    $('#edLine').innerHTML = cfg().lines.map(l => `<option value="${esc(l.id)}"${l.id===it.lineId?' selected':''}>${esc(l.category)} · ${esc(l.item)}</option>`).join('');
+  const showAcc = !(sheetItem && it.type === 'income');
+  $('#edMethods').hidden = !showAcc; $('#edMethodsL').hidden = !showAcc;
+  $('#edMethodsL').textContent = sheetItem ? (it.type==='transfer' ? 'จากบัญชี' : 'จ่ายจากบัญชี') : 'วิธีชำระ';
+  edRender();
   $('#mEdit').classList.add('on');
 }
-$('#edMethods').onclick = e => { const b = e.target.closest('.chip'); if(!b) return; edMethod = edMethod===b.dataset.m ? null : b.dataset.m; renderMethods($('#edMethods'), edMethod); };
+function edRender(){
+  const it = db.items.find(i => i.id === editId);
+  if(it && it.type && cfg()) $('#edMethods').innerHTML = chipsHtml(cfg().accounts, edMethod, 'm');
+  else renderMethods($('#edMethods'), edMethod);
+}
+$('#edMethods').onclick = e => {
+  const b = e.target.closest('.chip'); if(!b) return;
+  const it = db.items.find(i => i.id === editId);
+  edMethod = (it && it.type) ? b.dataset.m : (edMethod===b.dataset.m ? null : b.dataset.m);   // sheet items need an account
+  edRender();
+};
 $('#edCancel').onclick = () => $('#mEdit').classList.remove('on');
 $('#fEd').onsubmit = e => {
   e.preventDefault();
   const it = db.items.find(i => i.id === editId); if(!it) return;
-  const amount = parseAmt($('#edAmt').value), category = $('#edCat').value.trim(), ts = getDT($('#edTime'));
+  const amount = parseAmt($('#edAmt').value), ts = getDT($('#edTime'));
+  let category = $('#edCat').value.trim();
+  if(it.type){
+    if(it.type === 'expense' && cfg()){ const l = lineOf($('#edLine').value); if(l){ it.lineId = l.id; category = l.item; } }
+    else category = it.category;
+    if(it.type === 'transfer' && edMethod === it.toAccount){ $('#edErr').textContent = 'บัญชีต้นทางและปลายทางต้องต่างกัน'; return; }
+    if(it.type === 'transfer') category = `ย้ายเงิน ${accName(edMethod)} → ${accName(it.toAccount)}`;
+  }
   const err = !(amount>0) ? 'จำนวนเงินไม่ถูกต้อง' : !category ? 'กรุณาใส่หมวดหมู่' : (!ts || isNaN(parseTs(ts))) ? 'วันและเวลาไม่ถูกต้อง' : '';
   $('#edErr').textContent = err; if(err) return;
   Object.assign(it, {amount, category, ts, note:$('#edNote').value.trim(), method:edMethod,
     exported:$('#edExp').checked, exportedAt:$('#edExp').checked ? (it.exportedAt || new Date().toISOString()) : null,
     updatedAt:new Date().toISOString()});
-  persist(); $('#mEdit').classList.remove('on'); renderExport(); toast('แก้ไขแล้ว');
+  if(it.type){ it.sync = 'pending'; it.exported = false; }
+  persist(); $('#mEdit').classList.remove('on'); renderExport(); renderSheetInput(); toast('แก้ไขแล้ว');
+  syncNow();
 };
 
 /* ================= Settings ================= */
@@ -694,6 +775,7 @@ function renderSettings(){
     <small>ยังไม่ส่งออก ${pend} รายการ · <span id="stPersist">กำลังตรวจสอบพื้นที่จัดเก็บ…</span></small>`;
   $('#stCats').value = db.quickCats.map(c => c.join(' ')).join('\n');
   renderMethodSettings();
+  renderSheetSettings();
   checkPersist();
 }
 async function checkPersist(){
@@ -704,7 +786,9 @@ async function checkPersist(){
     el().textContent = p ? '🔒 พื้นที่จัดเก็บถาวร (ไม่ถูกลบอัตโนมัติ)' : '⚠️ ยังไม่ถาวร · ติดตั้งแอปลงหน้าจอโฮมแล้วสำรองข้อมูลเป็นประจำ';
   }catch(e){ el().textContent = 'ตรวจสอบพื้นที่จัดเก็บไม่ได้'; }
 }
-const backupJson = () => JSON.stringify({app:'expense-tracker', exportedAt:new Date().toISOString(), ...db}, null, 1);
+// the sheet token never goes into a backup file
+const backupJson = () => { const {sheet, ...rest} = db;
+  return JSON.stringify({app:'expense-tracker', exportedAt:new Date().toISOString(), ...rest, sheet: sheet ? {url: sheet.url} : null}, null, 1); };
 $('#stDl').onclick = () => {
   try{
     const a = document.createElement('a');
@@ -731,6 +815,12 @@ function importJson(text){
     db.items.push({id:String(it.id), ts:String(it.ts).slice(0,16), category:String(it.category), amount,
       note:String(it.note||''), method:db.methods.some(m=>m.id===it.method)?it.method:null,
       exported:!!it.exported, exportedAt:it.exportedAt||null, createdAt:it.createdAt||new Date().toISOString(), updatedAt:it.updatedAt||new Date().toISOString()});
+    if(['expense','transfer','income','one_time'].includes(it.type)){        // keep the sheet fields of synced items
+      const n = db.items[db.items.length-1];
+      Object.assign(n, {type:it.type, lineId:String(it.lineId||''), toAccount:String(it.toAccount||''), fromFund:String(it.fromFund||''),
+        toFund:String(it.toFund||''), eventId:String(it.eventId||''), sync: it.sync==='ok' ? 'ok' : 'pending', syncedOnce: !!it.syncedOnce});
+      if(it.method) n.method = String(it.method);
+    }
     added++;
   }
   (d.customCats||[]).forEach(c => { if(typeof c==='string' && !db.customCats.includes(c)) db.customCats.push(c); });
@@ -791,8 +881,235 @@ $('#stWipe').onclick = () => ask('ลบข้อมูลทั้งหมด?
   toast('ลบทั้งหมดแล้ว', 'เลิกทำ', () => { db.items = backup; persist(); renderSettings(); });
 });
 
+/* ================= Google Sheet sync =================
+   Sheet mode starts once a web-app URL and token are saved and the first sync has returned
+   the sheet's budget lines and accounts. Items made in sheet mode carry a type and are sent
+   in batches; the server writes them by id, so resending after a failure never duplicates. */
+const TYPES_UI = [['expense','จ่าย'],['transfer','ย้ายเงิน'],['income','รับเงิน'],['one_time','จ่ายจากกอง']];
+const TRANSFER_PRESETS = [{name:'กดเงินสด', from:'yucho', to:'cash'}, {name:'ชาร์จ Rakuten Pay', from:'cash', to:'rakutenpay'}, {name:'เติม PayPay', from:'yucho', to:'paypay'}];
+const sheetOn = () => !!(db.sheet && db.sheet.url && db.sheet.token);
+const cfg = () => (db.sheet && db.sheet.config) || null;
+const sheetReady = () => sheetOn() && !!cfg();
+function sd(){ return (cfg() && cfg().cycle && cfg().cycle.startDay) || 1; }
+function cycleKeyOf(ts){
+  const d = parseTs(ts); let y = d.getFullYear(), m = d.getMonth() + 1 + (d.getDate() >= sd() ? 1 : 0);
+  if(m > 12){ m -= 12; y++; }
+  return y*100 + m;
+}
+const accName = id => ((cfg() && cfg().accounts || []).find(a => a.id === id) || {}).name || methodName(id) || id || '';
+const fundName = id => ((cfg() && cfg().funds || []).find(f => f.id === id) || {}).name || id || '';
+const lineOf = id => (cfg() && cfg().lines || []).find(l => l.id === id);
+const notSent = it => it.type ? it.sync !== 'ok' : !it.exported;
+function statusTag(it){
+  if(!it.type) return it.exported ? '<span class="tag x">ส่งแล้ว</span>' : '';
+  if(it.sync === 'ok') return '<span class="tag x">☁ ชีต</span>';
+  if(it.sync === 'error') return '<span class="tag" style="color:var(--warn)">ชีตไม่รับ</span>';
+  return '<span class="tag">⏳ รอส่ง</span>';
+}
+/* Remaining budget = sheet budget − what the sheet has counted − local items the sheet has not seen yet */
+function pendingLocal(lineId){
+  const k = cfg() && cfg().cycle.key;
+  return db.items.filter(i => i.type === 'expense' && i.lineId === lineId && !i.syncedOnce && cycleKeyOf(i.ts) === k)
+                 .reduce((s,i) => s + i.amount, 0);
+}
+const remaining = l => l.budget - l.spent - pendingLocal(l.id);
+function chipsHtml(list, cur, attr){
+  return list.map(x => `<button type="button" class="chip${cur===x.id?' on':''}" data-${attr}="${esc(x.id)}">${esc(x.name)}</button>`).join('');
+}
+
+/* ---------- input form in sheet mode ---------- */
+const sx = {type:'expense', line:null, from:null, to:null, fund:null, event:''};
+function renderSheetInput(){
+  const on = sheetReady();
+  $('#localFields').hidden = on; $('#sheetFields').hidden = !on; $('#inType').hidden = !on;
+  renderSyncBadge();
+  if(!on) return;
+  const c = cfg(), t = sx.type, accs = c.accounts;
+  $('#inType').innerHTML = TYPES_UI.map(([k,n]) => `<button type="button" role="tab" aria-selected="${t===k}" class="${t===k?'on':''}" data-t="${k}">${n}</button>`).join('');
+  const groups = {};
+  c.lines.forEach(l => (groups[l.category] = groups[l.category] || []).push(l));
+  $('#inLines').innerHTML = Object.entries(groups).map(([g, ls]) => `<div class="lg"><div class="lgh">${esc(g)}</div><div class="chips">${
+    ls.map(l => { const r = remaining(l);
+      return `<button type="button" class="chip ln${sx.line===l.id?' on':''}${r<0?' over':''}" data-line="${esc(l.id)}">${esc(l.item)}<small>${r<0?'เกินงบ ':'เหลือ '}${yen(Math.abs(r))}</small></button>`; }).join('')
+  }</div></div>`).join('');
+  $('#inFrom').innerHTML = chipsHtml(accs, sx.from, 'from');
+  $('#inTo').innerHTML = chipsHtml(accs.filter(a => a.id !== sx.from), sx.to, 'to');
+  $('#inFund').innerHTML = chipsHtml(c.funds, sx.fund, 'fund');
+  const evs = c.events.filter(e => !e.done && (t === 'one_time' ? e.kind === 'จ่าย' : e.kind === 'รับ'));
+  $('#inEvent').innerHTML = '<option value="">ไม่ผูกกับเหตุการณ์</option>' +
+    evs.map(e => `<option value="${esc(e.id)}"${sx.event===e.id?' selected':''}>${esc(e.date)} · ${esc(e.name)} · ${yen(e.amount)}</option>`).join('');
+  const presets = t === 'transfer' ? TRANSFER_PRESETS.filter(p => accs.some(a => a.id === p.from) && accs.some(a => a.id === p.to)) : [];
+  $('#sfPreset').innerHTML = presets.map(p => `<button type="button" class="chip" data-pf="${p.from}" data-pt="${p.to}">${esc(p.name)}</button>`).join('');
+  $('#sfPreset').hidden = !presets.length;
+  $('#sfLine').hidden = t !== 'expense';
+  $('#sfFrom').hidden = t === 'income';
+  $('#sfFromL').textContent = t === 'transfer' ? 'จากบัญชี' : 'จ่ายจาก';
+  $('#sfTo').hidden = !(t === 'transfer' || t === 'income');
+  $('#sfEvent').hidden = !(t === 'one_time' || t === 'income');
+  $('#sfFund').hidden = !(t === 'one_time' || t === 'income');
+  $('#sfFundL').textContent = t === 'one_time' ? 'จ่ายจากกอง' : 'เข้ากอง (ไม่บังคับ)';
+}
+$('#inType').onclick = e => {
+  const b = e.target.closest('[data-t]'); if(!b) return;
+  sx.type = b.dataset.t; sx.event = ''; sx.fund = null; sx.line = null;
+  if(sx.type === 'transfer' || sx.type === 'income') sx.to = null;
+  renderSheetInput();
+};
+$('#inLines').onclick = e => {
+  const b = e.target.closest('[data-line]'); if(!b) return;
+  sx.line = sx.line === b.dataset.line ? null : b.dataset.line;
+  const l = lineOf(sx.line);
+  if(l && cfg().accounts.some(a => a.id === l.account)) sx.from = l.account;   // default account from the budget line
+  renderSheetInput();
+};
+$('#inFrom').onclick = e => { const b = e.target.closest('[data-from]'); if(!b) return; sx.from = b.dataset.from; if(sx.to === sx.from) sx.to = null; renderSheetInput(); };
+$('#inTo').onclick = e => { const b = e.target.closest('[data-to]'); if(!b) return; sx.to = b.dataset.to; renderSheetInput(); };
+$('#inFund').onclick = e => { const b = e.target.closest('[data-fund]'); if(!b) return; sx.fund = sx.fund === b.dataset.fund ? null : b.dataset.fund; renderSheetInput(); };
+$('#sfPreset').onclick = e => { const b = e.target.closest('[data-pf]'); if(!b) return; sx.from = b.dataset.pf; sx.to = b.dataset.pt; renderSheetInput(); };
+$('#inEvent').onchange = e => {
+  sx.event = e.target.value;
+  const ev = cfg().events.find(x => x.id === sx.event);
+  if(ev){ sx.fund = ev.fund; if(!$('#inAmt').value) $('#inAmt').value = ev.amount; }
+  renderSheetInput();
+};
+
+function submitSheet(amount){
+  const ts = getDT($('#inTime')), note = $('#inNote').value.trim(), t = sx.type;
+  const ev = sx.event ? cfg().events.find(x => x.id === sx.event) : null;
+  let err = '', category = '';
+  if(!(amount > 0)) err = 'กรุณากรอกจำนวนเงินเป็นตัวเลขจำนวนเต็มมากกว่า 0';
+  else if(!ts || isNaN(parseTs(ts))) err = 'วันและเวลาไม่ถูกต้อง';
+  else if(t === 'expense'){ const l = lineOf(sx.line); if(!l) err = 'กรุณาเลือกรายการงบ'; else if(!sx.from) err = 'กรุณาเลือกบัญชีที่จ่าย'; else category = l.item; }
+  else if(t === 'transfer'){ if(!sx.from || !sx.to) err = 'กรุณาเลือกบัญชีต้นทางและปลายทาง'; else category = `ย้ายเงิน ${accName(sx.from)} → ${accName(sx.to)}`; }
+  else if(t === 'income'){ if(!sx.to) err = 'กรุณาเลือกบัญชีที่รับเงิน'; else category = 'รับเงิน ' + (ev ? ev.name : accName(sx.to)); }
+  else if(t === 'one_time'){ if(!sx.from) err = 'กรุณาเลือกบัญชีที่จ่าย'; else if(!sx.fund) err = 'กรุณาเลือกกองที่จ่าย'; else category = ev ? ev.name : 'จ่ายจากกอง ' + fundName(sx.fund); }
+  $('#inErr').textContent = err;
+  if(err) return;
+  const now = new Date().toISOString();
+  db.items.push({id:uid(), ts, category, amount, note, method: t === 'income' ? null : sx.from,
+    type:t, lineId: t === 'expense' ? sx.line : '', toAccount: (t === 'transfer' || t === 'income') ? sx.to : '',
+    fromFund: t === 'one_time' ? sx.fund : '', toFund: t === 'income' ? (sx.fund || '') : '',
+    eventId: (t === 'one_time' || t === 'income') ? sx.event : '',
+    sync:'pending', syncedOnce:false, exported:false, exportedAt:null, createdAt:now, updatedAt:now});
+  if(!persist()) return;
+  $('#inAmt').value = ''; $('#inNote').value = '';
+  sx.line = null; sx.event = ''; if(t !== 'transfer') sx.fund = null;
+  refreshLiveTime(); renderSheetInput();
+  toast(`บันทึกสำเร็จ! ${category} ${yen(amount)}`);
+  syncNow();
+}
+
+/* ---------- sync ---------- */
+let syncing = false, syncAgain = false, delTimer;
+const toPayload = it => ({id:it.id, ts:it.ts, type:it.type, line_id:it.lineId || '', amount:it.amount,
+  from_account:it.method || '', to_account:it.toAccount || '', from_fund:it.fromFund || '', to_fund:it.toFund || '',
+  event_id:it.eventId || '', note:it.note || ''});
+const ERRORS = {unauthorized:'TOKEN ไม่ถูกต้อง', busy:'ชีตกำลังทำงานอยู่ ลองใหม่อีกครั้ง', bad_json:'ข้อมูลที่ส่งเสียหาย', server:'ชีตเกิดข้อผิดพลาด'};
+
+async function syncNow(){
+  if(!sheetOn()) return;
+  if(syncing){ syncAgain = true; return; }
+  if(!navigator.onLine){ db.sheet.lastError = 'ออฟไลน์ · จะส่งเมื่อมีเน็ต'; renderSyncBadge(); return; }
+  syncing = true; renderSyncBadge();
+  const ups = db.items.filter(i => i.type && i.sync === 'pending');
+  const sentAt = Object.fromEntries(ups.map(i => [i.id, i.updatedAt]));
+  const dels = db.sheet.deletes.slice();
+  try{
+    const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 30000);
+    const r = await fetch(db.sheet.url, {method:'POST', redirect:'follow', signal:ctl.signal,
+      headers:{'Content-Type':'text/plain;charset=utf-8'},           // a simple request: no CORS preflight
+      body: JSON.stringify({token:db.sheet.token, upserts:ups.map(toPayload), deletes:dels})});
+    clearTimeout(tm);
+    const res = await r.json();
+    if(!res.ok) throw new Error(ERRORS[res.error] || res.error || 'ชีตไม่ตอบรับ');
+    const okIds = new Set(res.upserted || []);
+    ups.forEach(i => {
+      // an item edited while this request was in flight stays pending and goes in the next sync
+      if(okIds.has(i.id)){ i.syncedOnce = true; if(i.updatedAt === sentAt[i.id]) i.sync = 'ok'; }
+    });
+    (res.rejected || []).forEach(x => { const it = db.items.find(i => i.id === x.id); if(it){ it.sync = 'error'; it.syncError = x.error; } });
+    const delOk = new Set(res.deleted || []);
+    db.sheet.deletes = db.sheet.deletes.filter(id => !delOk.has(id));
+    if(res.config){ db.sheet.config = res.config; mergeAccounts(); }
+    db.sheet.lastSync = new Date().toISOString();
+    db.sheet.lastError = (res.rejected || []).length ? `ชีตไม่รับ ${res.rejected.length} รายการ (กดแก้ไขรายการแล้วบันทึกใหม่)` : '';
+    persist();
+  }catch(e){
+    db.sheet.lastError = e.name === 'AbortError' ? 'หมดเวลาเชื่อมต่อ' : (e.message === 'Failed to fetch' ? 'เชื่อมต่อชีตไม่ได้' : e.message);
+    persist();
+  }
+  syncing = false;
+  renderSheetInput();
+  if($('#v-export').classList.contains('on')) renderExport();
+  if($('#v-set').classList.contains('on')) renderSettings();
+  if(syncAgain){ syncAgain = false; syncNow(); }
+}
+/* Sheet accounts become payment methods too, so labels and old views keep working */
+function mergeAccounts(){
+  cfg().accounts.forEach(a => { if(!db.methods.some(m => m.id === a.id)) db.methods.push({id:a.id, name:a.name}); });
+}
+function renderSyncBadge(){
+  const b = $('#syncBadge');
+  b.hidden = !sheetOn(); if(b.hidden) return;
+  const n = db.items.filter(i => i.type && i.sync === 'pending').length + db.sheet.deletes.length;
+  const t = db.sheet.lastSync ? new Date(db.sheet.lastSync) : null;
+  const when = t ? `${pad(t.getHours())}:${pad(t.getMinutes())}` : '';
+  b.classList.toggle('warn', !!db.sheet.lastError && !syncing);
+  b.textContent = syncing ? '⏳ กำลังซิงก์กับชีต…'
+    : db.sheet.lastError ? `⚠️ ${db.sheet.lastError}${n ? ` · รอส่ง ${n}` : ''} · แตะเพื่อลองใหม่`
+    : n ? `⏳ รอส่ง ${n} รายการ · แตะเพื่อซิงก์`
+    : !cfg() ? 'แตะเพื่อโหลดข้อมูลจากชีต'
+    : `☁ ซิงก์กับชีตแล้ว ${when} · รอบ ${cfg().cycle.key}`;
+}
+$('#syncBadge').onclick = () => syncNow();
+window.addEventListener('online', () => syncNow());
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden || !sheetOn()) return;
+  const last = db.sheet.lastSync ? Date.parse(db.sheet.lastSync) : 0;
+  if(Date.now() - last > 60000) syncNow();          // refresh remaining budgets when the app comes back
+});
+
+/* ---------- settings ---------- */
+function renderSheetSettings(){
+  const s = db.sheet;
+  $('#shUrl').value = s ? s.url : ''; $('#shToken').value = s ? s.token : '';
+  $('#shSync').hidden = $('#shOff').hidden = !sheetOn();
+  const n = s ? db.items.filter(i => i.type && i.sync === 'pending').length + s.deletes.length : 0;
+  $('#shStatus').innerHTML = !sheetOn() ? '<small>ยังไม่ได้เชื่อมต่อ · แอปทำงานแบบเดิม (ส่งข้อความให้ Gemini)</small>'
+    : `<small>${s.lastError ? '⚠️ ' + esc(s.lastError) : '☁ เชื่อมต่อแล้ว'} · ซิงก์ล่าสุด ${s.lastSync ? esc(fmtDT(toLocalInput(new Date(s.lastSync)))) : '-'} · รอส่ง ${n} รายการ</small>`;
+  const c = cfg();
+  $('#shData').innerHTML = !(sheetOn() && c) ? '' : `<div class="sum"><small>ข้อมูลจากชีต ณ ซิงก์ล่าสุด · รอบ ${c.cycle.key} (${esc(c.cycle.start)} ถึง ${esc(c.cycle.end)})</small>
+    <div class="kv">
+      <div class="h">ยอดบัญชี</div>${c.accounts.map(a => `<div>${esc(a.name)}</div><div class="n">${yen(a.balance)}</div>`).join('')}
+      <div class="h">งบรอบนี้</div><div>งบรวม</div><div class="n">${yen(c.lines.reduce((x,l)=>x+l.budget,0))}</div>
+      <div>จ่ายแล้ว (ในชีต)</div><div class="n">${yen(c.lines.reduce((x,l)=>x+l.spent,0))}</div>
+      <div class="h">กองเงิน</div>${c.funds.map(f => `<div>${esc(f.name)}</div><div class="n">${yen(f.balance)} / ${yen(f.target)}</div>`).join('')}
+      <div class="h">เหตุการณ์ที่รออยู่</div>${c.events.filter(e => !e.done).map(e => `<div>${esc(e.date)} ${esc(e.name)}${e.scenario && e.scenario !== 'ทั้งคู่' ? ' (กรณี ' + esc(e.scenario) + ')' : ''}</div><div class="n">${e.kind === 'รับ' ? '+' : ''}${yen(e.amount)}</div>`).join('')}
+    </div></div>`;
+}
+$('#shConnect').onclick = async () => {
+  const url = $('#shUrl').value.trim(), token = $('#shToken').value.trim();
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)){ toast('URL ต้องเป็น https://script.google.com/macros/s/…/exec'); return; }
+  if(token.length < 16){ toast('TOKEN สั้นเกินไป'); return; }
+  const prev = db.sheet || {};
+  const changed = prev.url && prev.url !== url;
+  db.sheet = {url, token, config: changed ? null : (prev.config || null), deletes: changed ? [] : (prev.deletes || []), lastSync:null, lastError:''};
+  persist(); toast('กำลังเชื่อมต่อ…');
+  await syncNow();
+  toast(db.sheet.lastError ? '⚠️ ' + db.sheet.lastError : 'เชื่อมต่อชีตสำเร็จ');
+};
+$('#shSync').onclick = () => syncNow();
+$('#shOff').onclick = () => {
+  const n = db.items.filter(i => i.type && i.sync === 'pending').length + (db.sheet ? db.sheet.deletes.length : 0);
+  ask('ยกเลิกการเชื่อมต่อชีต?', n ? `ยังมี ${n} รายการที่ยังไม่ได้ส่งขึ้นชีต รายการยังอยู่ในเครื่อง และจะส่งต่อเมื่อเชื่อมต่อใหม่` : 'รายการในเครื่องยังอยู่ครบ', () => {
+    db.sheet = Object.assign(db.sheet || {}, {token:''}); db.sheet.url = '';
+    persist(); renderSettings(); renderSheetInput(); toast('ยกเลิกการเชื่อมต่อแล้ว');
+  });
+};
+
 /* ================= Boot ================= */
 renderQuickCats(); renderMethods($('#inMethods'), null); refreshLiveTime();
+renderSheetInput(); syncNow();
 if('serviceWorker' in navigator && location.protocol === 'https:'){
   navigator.serviceWorker.register('sw.js').catch(() => {});   // offline cache; silently skipped where not allowed
 }
