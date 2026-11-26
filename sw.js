@@ -1,5 +1,5 @@
 // Offline cache: app shell is served cache-first; bump VERSION after editing index.html
-const VERSION = 'expense-v6-2';
+const VERSION = 'expense-v6-3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

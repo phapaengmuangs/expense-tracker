@@ -50,7 +50,7 @@ textarea.f{min-height:120px;font-size:14px;font-family:ui-monospace,monospace}
 .btn.sm{min-height:44px;font-size:14px;padding:6px 12px}
 .save{position:fixed;left:0;right:0;bottom:64px;padding:10px 16px;background:linear-gradient(transparent,var(--bg) 30%)}
 .save .btn{display:block;width:100%;max-width:528px;margin:0 auto;font-size:18px;min-height:56px}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;height:64px;display:grid;grid-template-columns:repeat(3,1fr);background:var(--bg);border-top:1px solid var(--rule);z-index:5}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;height:64px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1px solid var(--rule);z-index:5}
 nav.tabs button{border:0;background:none;font-size:14px;color:var(--sub);font-weight:500}
 nav.tabs button.on{color:var(--acc);font-weight:700;box-shadow:inset 0 3px 0 var(--acc)}
 .sum{background:var(--card);border-radius:14px;padding:14px;margin:12px 0}
@@ -133,6 +133,35 @@ ul.list li.mrow{grid-template-columns:minmax(0,1fr) 40px 40px 40px;gap:4px;borde
 ul.list.nock li{grid-template-columns:minmax(0,1fr) auto;padding-left:4px}
 ul.list.nock li.dayh{padding-left:10px}
 .legacy{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+select.f{width:100%;border:1px solid var(--rule);background-color:var(--card);border-radius:10px;padding:11px 34px 11px 12px;font-size:16px;min-height:46px;color:var(--ink);appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--sub) 50%),linear-gradient(135deg,var(--sub) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:34px}
+.lineinfo{margin-top:10px;background:var(--card);border-radius:12px;padding:10px 12px}
+.lineinfo .big2{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.lineinfo small{color:var(--sub);font-size:13px}
+.meter{height:10px;background:var(--rule);border-radius:5px;overflow:hidden;margin:6px 0 2px}
+.meter i{display:block;height:100%;background:var(--acc);border-radius:5px}
+.meter.over i{background:var(--warn)}
+.meter.warnish i{background:#c2850c}
+.over-t{color:var(--warn);font-weight:600}
+.dcard{background:var(--card);border-radius:14px;padding:14px;margin:12px 0}
+.dcard h2{font-size:16px;margin:0 0 8px;font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.kpi{background:var(--bg);border-radius:10px;padding:8px 10px}
+.kpi small{display:block;color:var(--sub);font-size:12px}
+.kpi b{font-size:18px;font-variant-numeric:tabular-nums}
+.drow{padding:8px 0;border-bottom:1px dashed var(--rule)}
+.drow:last-child{border-bottom:0}
+.drow .top{display:flex;justify-content:space-between;gap:8px;font-size:15px}
+.drow .top span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.drow .sub{font-size:12px;color:var(--sub)}
+details.dl summary{cursor:pointer;list-style:none}
+details.dl summary::-webkit-details-marker{display:none}
+details.dl[open] summary .top span:first-child::after{content:' ▴'}
+details.dl summary .top span:first-child::after{content:' ▾';color:var(--sub)}
+.dl .inner{padding:4px 0 2px 10px}
+.ev{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:baseline;font-size:14px;padding:6px 0;border-bottom:1px dashed var(--rule)}
+.ev:last-child{border-bottom:0}
+.ev .d{font-weight:700;white-space:nowrap}.ev .n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.ev small{grid-column:2/-1;color:var(--sub);font-size:12px}
 hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
@@ -156,7 +185,13 @@ hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
       <div class="chips" id="inMethods"></div>
       </div>
       <div id="sheetFields" hidden>
-        <div id="sfLine"><label class="l">รายการงบ (ตัวเลขคืองบที่เหลือในรอบนี้)</label><div id="inLines"></div></div>
+        <div id="sfLine">
+          <label class="l" for="inCat">หมวดหลัก</label>
+          <select class="f" id="inCat"></select>
+          <label class="l" for="inLine">รายการย่อย</label>
+          <select class="f" id="inLine"></select>
+          <div class="lineinfo" id="inLineInfo" hidden></div>
+        </div>
         <div id="sfPreset" class="chips" style="margin-top:14px"></div>
         <div id="sfFrom"><label class="l" id="sfFromL">จ่ายจาก</label><div class="chips" id="inFrom"></div></div>
         <div id="sfTo"><label class="l">ไปบัญชี</label><div class="chips" id="inTo"></div></div>
@@ -174,6 +209,12 @@ hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
       <div class="err" id="inErr" role="alert"></div>
       <div class="save"><button class="btn pri" id="inSave">บันทึก</button></div>
     </form>
+  </section>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="v-dash" class="view" aria-label="ภาพรวม">
+    <h1>ภาพรวม</h1>
+    <div id="dash"></div>
   </section>
 
   <!-- ============ EXPORT ============ -->
@@ -246,6 +287,7 @@ hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
 
 <nav class="tabs" role="tablist">
   <button data-v="input" class="on">📝 บันทึก</button>
+  <button data-v="dash">📊 ภาพรวม</button>
   <button data-v="export" id="tabExport">📤 ส่งออก</button>
   <button data-v="set">⚙️ ตั้งค่า</button>
 </nav>
@@ -385,6 +427,7 @@ function show(v){
   if(v === 'input') refreshLiveTime();
   if(v === 'export') renderExport(); else $('#fab').hidden = true;
   if(v === 'set') renderSettings();
+  if(v === 'dash') renderDash();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
@@ -948,7 +991,7 @@ function chipsHtml(list, cur, attr){
 }
 
 /* ---------- input form in sheet mode ---------- */
-const sx = {type:'expense', line:null, from:null, to:null, fund:null, event:''};
+const sx = {type:'expense', cat:'', line:null, from:null, to:null, fund:null, event:''};
 let sheetViewSet = false;     // open history on the current pay cycle once the sheet is ready
 function renderSheetInput(){
   const on = sheetReady();
@@ -959,12 +1002,16 @@ function renderSheetInput(){
   if(!on) return;
   const c = cfg(), t = sx.type, accs = c.accounts;
   $('#inType').innerHTML = TYPES_UI.map(([k,n]) => `<button type="button" role="tab" aria-selected="${t===k}" class="${t===k?'on':''}" data-t="${k}">${n}</button>`).join('');
-  const groups = {};
-  c.lines.forEach(l => (groups[l.category] = groups[l.category] || []).push(l));
-  $('#inLines').innerHTML = Object.entries(groups).map(([g, ls]) => `<div class="lg"><div class="lgh">${esc(g)}</div><div class="chips">${
-    ls.map(l => { const r = remaining(l);
-      return `<button type="button" class="chip ln${sx.line===l.id?' on':''}${r<0?' over':''}" data-line="${esc(l.id)}">${esc(l.item)}<small>${r<0?'เกินงบ ':'เหลือ '}${yen(Math.abs(r))}</small></button>`; }).join('')
-  }</div></div>`).join('');
+  const groups = lineGroups();
+  if(sx.cat && !groups[sx.cat]) sx.cat = '';
+  const left = r => (r < 0 ? 'เกินงบ ' : 'เหลือ ') + yen(Math.abs(r));
+  $('#inCat').innerHTML = '<option value="">เลือกหมวด</option>' + Object.entries(groups).map(([g, ls]) =>
+    `<option value="${esc(g)}"${sx.cat===g?' selected':''}>${esc(g)} · ${left(ls.reduce((x,l) => x + remaining(l), 0))}</option>`).join('');
+  const ls = sx.cat ? groups[sx.cat] : [];
+  $('#inLine').disabled = !sx.cat;
+  $('#inLine').innerHTML = (sx.cat ? '<option value="">เลือกรายการ</option>' : '<option value="">เลือกหมวดก่อน</option>') +
+    ls.map(l => `<option value="${esc(l.id)}"${sx.line===l.id?' selected':''}>${esc(l.item)} · ${left(remaining(l))}</option>`).join('');
+  renderLineInfo(ls);
   $('#inFrom').innerHTML = chipsHtml(accs, sx.from, 'from');
   $('#inTo').innerHTML = chipsHtml(accs.filter(a => a.id !== sx.from), sx.to, 'to');
   $('#inFund').innerHTML = chipsHtml(c.funds, sx.fund, 'fund');
@@ -984,17 +1031,40 @@ function renderSheetInput(){
 }
 $('#inType').onclick = e => {
   const b = e.target.closest('[data-t]'); if(!b) return;
-  sx.type = b.dataset.t; sx.event = ''; sx.fund = null; sx.line = null;
+  sx.type = b.dataset.t; sx.event = ''; sx.fund = null; sx.line = null; sx.cat = '';
   if(sx.type === 'transfer' || sx.type === 'income') sx.to = null;
   renderSheetInput();
 };
-$('#inLines').onclick = e => {
-  const b = e.target.closest('[data-line]'); if(!b) return;
-  sx.line = sx.line === b.dataset.line ? null : b.dataset.line;
+function lineGroups(){
+  const g = {};
+  (cfg() ? cfg().lines : []).forEach(l => (g[l.category] = g[l.category] || []).push(l));
+  return g;
+}
+function pickLine(id){
+  sx.line = id || null;
   const l = lineOf(sx.line);
   if(l && cfg().accounts.some(a => a.id === l.account)) sx.from = l.account;   // default account from the budget line
+}
+/* Leftover for the chosen item, or for the whole main category before an item is chosen */
+function renderLineInfo(ls){
+  const box = $('#inLineInfo'), l = lineOf(sx.line);
+  const list = l ? [l] : ls;
+  box.hidden = !list.length;
+  if(!list.length) return;
+  const budget = list.reduce((x,i) => x + i.budget, 0), used = list.reduce((x,i) => x + i.spent + pendingLocal(i.id), 0), r = budget - used;
+  const pct = budget ? used / budget : 0;
+  box.innerHTML = `<small>${l ? esc(l.item) + ' · จ่ายผ่าน ' + esc(l.channel) : 'ทั้งหมวด ' + esc(sx.cat) + ' (' + list.length + ' รายการ)'}</small>
+    <div class="big2 ${r < 0 ? 'over-t' : ''}">${r < 0 ? 'เกินงบ ' : 'เหลือ '}${yen(Math.abs(r))}</div>
+    <div class="meter ${pct > 1 ? 'over' : pct > .85 ? 'warnish' : ''}"><i style="width:${Math.min(100, pct*100).toFixed(1)}%"></i></div>
+    <small>ใช้ไป ${yen(used)} จาก ${yen(budget)} (${(pct*100).toFixed(0)}%) ในรอบ ${cfg().cycle.key}</small>`;
+}
+$('#inCat').onchange = e => {
+  sx.cat = e.target.value; sx.line = null;
+  const ls = lineGroups()[sx.cat] || [];
+  if(ls.length === 1) pickLine(ls[0].id);           // a category with one item needs no second pick
   renderSheetInput();
 };
+$('#inLine').onchange = e => { pickLine(e.target.value); renderSheetInput(); };
 $('#inFrom').onclick = e => { const b = e.target.closest('[data-from]'); if(!b) return; sx.from = b.dataset.from; if(sx.to === sx.from) sx.to = null; renderSheetInput(); };
 $('#inTo').onclick = e => { const b = e.target.closest('[data-to]'); if(!b) return; sx.to = b.dataset.to; renderSheetInput(); };
 $('#inFund').onclick = e => { const b = e.target.closest('[data-fund]'); if(!b) return; sx.fund = sx.fund === b.dataset.fund ? null : b.dataset.fund; renderSheetInput(); };
@@ -1026,7 +1096,8 @@ function submitSheet(amount){
     sync:'pending', syncedOnce:false, exported:false, exportedAt:null, createdAt:now, updatedAt:now});
   if(!persist()) return;
   $('#inAmt').value = ''; $('#inNote').value = '';
-  sx.line = null; sx.event = ''; if(t !== 'transfer') sx.fund = null;
+  sx.event = ''; if(t !== 'transfer') sx.fund = null;
+  if((lineGroups()[sx.cat] || []).length !== 1) sx.line = null;
   refreshLiveTime(); renderSheetInput();
   toast(`บันทึกสำเร็จ! ${category} ${yen(amount)}`);
   syncNow();
@@ -1075,6 +1146,7 @@ async function syncNow(){
   renderSheetInput();
   if($('#v-export').classList.contains('on')) renderExport();
   if($('#v-set').classList.contains('on')) renderSettings();
+  if($('#v-dash').classList.contains('on')) renderDash();
   if(syncAgain){ syncAgain = false; syncNow(); }
 }
 /* Sheet accounts become payment methods too, so labels and old views keep working */
@@ -1111,14 +1183,7 @@ function renderSheetSettings(){
   $('#shStatus').innerHTML = !sheetOn() ? '<small>ยังไม่ได้เชื่อมต่อ · แอปทำงานแบบเดิม (ส่งข้อความให้ Gemini)</small>'
     : `<small>${s.lastError ? '⚠️ ' + esc(s.lastError) : '☁ เชื่อมต่อแล้ว'} · ซิงก์ล่าสุด ${s.lastSync ? esc(fmtDT(toLocalInput(new Date(s.lastSync)))) : '-'} · รอส่ง ${n} รายการ</small>`;
   const c = cfg();
-  $('#shData').innerHTML = !(sheetOn() && c) ? '' : `<div class="sum"><small>ข้อมูลจากชีต ณ ซิงก์ล่าสุด · รอบ ${c.cycle.key} (${esc(c.cycle.start)} ถึง ${esc(c.cycle.end)})</small>
-    <div class="kv">
-      <div class="h">ยอดบัญชี</div>${c.accounts.map(a => `<div>${esc(a.name)}</div><div class="n">${yen(a.balance)}</div>`).join('')}
-      <div class="h">งบรอบนี้</div><div>งบรวม</div><div class="n">${yen(c.lines.reduce((x,l)=>x+l.budget,0))}</div>
-      <div>จ่ายแล้ว (ในชีต)</div><div class="n">${yen(c.lines.reduce((x,l)=>x+l.spent,0))}</div>
-      <div class="h">กองเงิน</div>${c.funds.map(f => `<div>${esc(f.name)}</div><div class="n">${yen(f.balance)} / ${yen(f.target)}</div>`).join('')}
-      <div class="h">เหตุการณ์ที่รออยู่</div>${c.events.filter(e => !e.done).map(e => `<div>${esc(e.date)} ${esc(e.name)}${e.scenario && e.scenario !== 'ทั้งคู่' ? ' (กรณี ' + esc(e.scenario) + ')' : ''}</div><div class="n">${e.kind === 'รับ' ? '+' : ''}${yen(e.amount)}</div>`).join('')}
-    </div></div>`;
+  $('#shData').innerHTML = (sheetOn() && c) ? '<p class="hint">ยอดบัญชี งบ กองเงิน และเหตุการณ์ ดูได้ที่แท็บ 📊 ภาพรวม</p>' : '';
 }
 $('#shConnect').onclick = async () => {
   const url = $('#shUrl').value.trim(), token = $('#shToken').value.trim();
@@ -1139,6 +1204,94 @@ $('#shOff').onclick = () => {
     persist(); renderSettings(); renderSheetInput(); toast('ยกเลิกการเชื่อมต่อแล้ว');
   });
 };
+
+/* ================= Dashboard =================
+   Built from the last sheet sync, then adjusted for local items the sheet has not received yet,
+   so the numbers move the moment something is recorded, even offline. */
+const dayMs = 864e5;
+const dOnly = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+function localDelta(){
+  const acc = {}, fund = {}, done = new Set();
+  db.items.filter(i => i.type && !i.syncedOnce).forEach(i => {
+    if(i.method && i.type !== 'income') acc[i.method] = (acc[i.method] || 0) - i.amount;
+    if(i.toAccount) acc[i.toAccount] = (acc[i.toAccount] || 0) + i.amount;
+    if(i.fromFund) fund[i.fromFund] = (fund[i.fromFund] || 0) - i.amount;
+    if(i.toFund) fund[i.toFund] = (fund[i.toFund] || 0) + i.amount;
+    if(i.eventId) done.add(i.eventId);
+  });
+  return {acc, fund, done};
+}
+const meter = (used, total) => { const p = total ? used / total : 0;
+  return `<div class="meter ${p > 1 ? 'over' : p > .85 ? 'warnish' : ''}"><i style="width:${Math.min(100, p*100).toFixed(1)}%"></i></div>`; };
+function renderDash(){
+  const el = $('#dash'), c = cfg();
+  if(!sheetReady()){
+    el.innerHTML = `<div class="dcard"><p>เชื่อมต่อ Google Sheet ที่แท็บ ⚙️ ตั้งค่า เพื่อดูงบคงเหลือ ยอดบัญชี และกองเงินที่นี่</p></div>`;
+    return;
+  }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = dOnly(c.cycle.start), end = dOnly(c.cycle.end);
+  const totalDays = Math.round((end - start) / dayMs) + 1;
+  const daysLeft = Math.max(0, Math.round((end - today) / dayMs) + 1);
+  const elapsed = totalDays - daysLeft;
+  const budget = c.lines.reduce((x,l) => x + l.budget, 0);
+  const used = c.lines.reduce((x,l) => x + l.spent + pendingLocal(l.id), 0);
+  const left = budget - used;
+  const perDay = daysLeft ? Math.floor(Math.max(0, left) / daysLeft) : 0;
+  const t = db.sheet.lastSync ? new Date(db.sheet.lastSync) : null;
+  const delta = localDelta();
+
+  // categories with their lines, most-used share first
+  const groups = lineGroups();
+  const cats = Object.entries(groups).map(([g, ls]) => {
+    const b = ls.reduce((x,l) => x + l.budget, 0), u = ls.reduce((x,l) => x + l.spent + pendingLocal(l.id), 0);
+    return {g, ls, b, u};
+  }).sort((a,b) => (b.b ? b.u/b.b : 0) - (a.b ? a.u/a.b : 0));
+
+  const evs = c.events.filter(e => !e.done && !delta.done.has(e.id)).sort((a,b) => a.date.localeCompare(b.date)).slice(0, 5);
+
+  el.innerHTML = `
+  <div class="dcard">
+    <small>รอบ ${c.cycle.key} · ${start.getDate()} ${TH_MON[start.getMonth()]} – ${end.getDate()} ${TH_MON[end.getMonth()]} · เหลือ ${daysLeft} วัน</small>
+    <div class="big ${left < 0 ? 'over-t' : ''}" style="font-size:34px;font-weight:700;line-height:1.15">${left < 0 ? 'เกินงบ ' : ''}${yen(Math.abs(left))}</div>
+    <small>${left < 0 ? 'ใช้เกินงบรอบนี้' : 'งบคงเหลือรอบนี้'} · ใช้ไป ${yen(used)} จาก ${yen(budget)}</small>
+    ${meter(used, budget)}
+    <div class="kpis">
+      <div class="kpi"><small>งบคงเหลือเฉลี่ยต่อวัน (รวมบิลที่ยังไม่จ่าย)</small><b>${yen(perDay)}</b></div>
+      <div class="kpi"><small>ผ่านไปแล้ว</small><b>${elapsed} / ${totalDays} วัน</b></div>
+      <div class="kpi"><small>รายรับต่อเดือน</small><b>${yen(c.income)}</b></div>
+      <div class="kpi"><small>เหลือเก็บตามงบ</small><b>${yen(c.income - budget)}</b></div>
+    </div>
+  </div>
+
+  <div class="dcard"><h2>งบตามหมวด</h2>
+    ${cats.map(x => `<details class="dl drow"><summary>
+        <div class="top"><span>${esc(x.g)}</span><span class="${x.u > x.b ? 'over-t' : ''}">${x.u > x.b ? 'เกิน ' : 'เหลือ '}${yen(Math.abs(x.b - x.u))}</span></div>
+        ${meter(x.u, x.b)}<div class="sub">ใช้ไป ${yen(x.u)} จาก ${yen(x.b)}</div></summary>
+        <div class="inner">${x.ls.map(l => { const u = l.spent + pendingLocal(l.id);
+          return `<div class="drow"><div class="top"><span>${esc(l.item)}</span><span class="${u > l.budget ? 'over-t' : ''}">${u > l.budget ? 'เกิน ' : 'เหลือ '}${yen(Math.abs(l.budget - u))}</span></div>${meter(u, l.budget)}<div class="sub">${yen(u)} / ${yen(l.budget)} · ${esc(l.channel)}</div></div>`; }).join('')}</div>
+      </details>`).join('')}
+  </div>
+
+  <div class="dcard"><h2>ยอดเงินแต่ละบัญชี</h2>
+    ${c.accounts.map(a => { const b = a.balance + (delta.acc[a.id] || 0);
+      return `<div class="drow"><div class="top"><span>${esc(a.name)}</span><span class="${b < 0 ? 'over-t' : ''}">${yen(b)}</span></div></div>`; }).join('')}
+  </div>
+
+  <div class="dcard"><h2>กองเงินเป้าหมาย</h2>
+    ${c.funds.map(f => { const b = f.balance + (delta.fund[f.id] || 0);
+      return `<div class="drow"><div class="top"><span>${esc(f.name)}</span><span>${yen(b)} / ${yen(f.target)}</span></div>${meter(b, f.target)}<div class="sub">${b >= f.target ? 'ครบเป้าหมายแล้ว' : 'ขาดอีก ' + yen(f.target - b)}</div></div>`; }).join('')}
+  </div>
+
+  <div class="dcard"><h2>เหตุการณ์ที่กำลังจะมาถึง</h2>
+    ${evs.length ? evs.map(e => { const d = dOnly(e.date), n = Math.round((d - today) / dayMs);
+      return `<div class="ev"><span class="d">${d.getDate()} ${TH_MON[d.getMonth()]}</span><span>${esc(e.name)}</span><span class="n">${e.kind === 'รับ' ? '+' : '−'}${yen(e.amount)}</span>
+        <small>${n > 0 ? 'อีก ' + n + ' วัน' : n === 0 ? 'วันนี้' : 'เลยกำหนด ' + (-n) + ' วัน'} · กอง${esc(fundName(e.fund))}${e.scenario && e.scenario !== 'ทั้งคู่' ? ' · กรณี ' + esc(e.scenario) : ''}</small></div>`; }).join('')
+      : '<p class="hint">ไม่มีเหตุการณ์ที่รออยู่</p>'}
+  </div>
+  <p class="hint">ข้อมูลจากชีต ณ ${t ? fmtDT(toLocalInput(t)) : '-'} รวมรายการที่ยังรอส่งในเครื่อง · <button class="lnk" id="dashSync">ซิงก์ตอนนี้</button></p>`;
+}
+$('#dash').onclick = e => { if(e.target.closest('#dashSync')) syncNow(); };
 
 /* ================= Boot ================= */
 renderQuickCats(); renderMethods($('#inMethods'), null); refreshLiveTime();
