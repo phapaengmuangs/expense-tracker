@@ -129,6 +129,10 @@ ul.list li.mrow{grid-template-columns:minmax(0,1fr) 40px 40px 40px;gap:4px;borde
 .kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:14px;margin-top:6px}
 .kv .n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 .kv .h{grid-column:1/-1;font-weight:600;margin-top:8px}
+.hist .gem{display:none !important}
+ul.list.nock li{grid-template-columns:minmax(0,1fr) auto;padding-left:4px}
+ul.list.nock li.dayh{padding-left:10px}
+.legacy{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
@@ -174,24 +178,25 @@ hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
 
   <!-- ============ EXPORT ============ -->
   <section id="v-export" class="view" aria-label="ส่งออก">
-    <h1>ประวัติและส่งออก</h1>
+    <h1 id="exH1">ประวัติและส่งออก</h1>
+    <div id="exLegacy"></div>
     <div class="filters" id="exFilters" role="tablist"></div>
     <div class="cal" id="exCal" hidden></div>
     <div class="sum" id="exSum"></div>
     <div class="bar2">
-      <button class="btn sm" id="exAll">เลือกทั้งหมด</button>
-      <button class="btn sm" id="exNone">ล้างการเลือก</button>
+      <button class="btn sm gem" id="exAll">เลือกทั้งหมด</button>
+      <button class="btn sm gem" id="exNone">ล้างการเลือก</button>
       <button class="btn sm" id="exSort"></button>
     </div>
     <ul class="list" id="exList"></ul>
-    <div class="bar2">
+    <div class="bar2 gem">
       <button class="btn pri" id="exGen" style="flex:1">สรุปข้อความ</button>
     </div>
-    <textarea class="f" id="exText" readonly placeholder="เลือกรายการแล้วกด “สรุปข้อความ”"></textarea>
-    <div class="bar2">
+    <textarea class="f gem" id="exText" readonly placeholder="เลือกรายการแล้วกด “สรุปข้อความ”"></textarea>
+    <div class="bar2 gem">
       <button class="btn pri" id="exCopy" style="flex:1">คัดลอก + ทำเครื่องหมายว่าส่งแล้ว</button>
     </div>
-    <p class="hint">หลังคัดลอก รายการจะถูกทำเครื่องหมาย “ส่งแล้ว” และหายจากตัวกรอง “ยังไม่ส่ง” เพื่อกันการบันทึกซ้ำในสเปรดชีต</p>
+    <p class="hint gem">หลังคัดลอก รายการจะถูกทำเครื่องหมาย “ส่งแล้ว” และหายจากตัวกรอง “ยังไม่ส่ง” เพื่อกันการบันทึกซ้ำในสเปรดชีต</p>
   </section>
 
   <!-- ============ SETTINGS ============ -->
@@ -241,7 +246,7 @@ hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
 
 <nav class="tabs" role="tablist">
   <button data-v="input" class="on">📝 บันทึก</button>
-  <button data-v="export">📤 ส่งออก</button>
+  <button data-v="export" id="tabExport">📤 ส่งออก</button>
   <button data-v="set">⚙️ ตั้งค่า</button>
 </nav>
 
@@ -535,12 +540,27 @@ function renderCalendar(){
       <button class="btn sm" id="calAll">${filter==='month'?'ดูทั้งเดือน':'ดูทั้งสัปดาห์'}</button>
       ${offset ? '<button class="btn sm" id="calNow">กลับมาปัจจุบัน</button>' : ''}
     </div>
-    <p class="hint">${dayPicks.size ? `แสดง ${dayPicks.size} วันที่เลือก · แตะวันเพิ่มหรือแตะซ้ำเพื่อเอาออก` : `แสดงทั้ง${filter==='month'?'เดือน':'สัปดาห์'} · แตะวันที่เพื่อดูเฉพาะวัน (เลือกได้หลายวัน)`} · ✓ = จำนวนรายการที่ติ๊กไว้ ซึ่งยังอยู่แม้เปลี่ยนวัน</p>`;
+    <p class="hint">${dayPicks.size ? `แสดง ${dayPicks.size} วันที่เลือก · แตะวันเพิ่มหรือแตะซ้ำเพื่อเอาออก` : `แสดงทั้ง${filter==='month'?'เดือน':'สัปดาห์'} · แตะวันที่เพื่อดูเฉพาะวัน (เลือกได้หลายวัน)`}${histMode() ? '' : ' · ✓ = จำนวนรายการที่ติ๊กไว้ ซึ่งยังอยู่แม้เปลี่ยนวัน'}</p>`;
 }
 
+/* With the sheet connected, this tab is a history view: no ticking, no Gemini text.
+   The old tools come back only while pre-sheet items are still waiting to be sent. */
+let legacyOpen = false;
+const histMode = () => sheetReady() && !legacyOpen;
+const legacyUnsent = () => db.items.filter(i => !i.type && !i.exported).length;
 function renderExport(){
-  $('#exFilters').innerHTML = FILTERS.map(([k,n]) => {
-    const c = k==='pending' ? ` (${db.items.filter(notSent).length})` : '';
+  const hm = histMode(), nLegacy = legacyUnsent();
+  $('#v-export').classList.toggle('hist', hm);
+  $('#exList').classList.toggle('nock', hm);
+  $('#exH1').textContent = hm ? 'ประวัติรายการ' : 'ประวัติและส่งออก';
+  $('#exLegacy').innerHTML = !sheetReady() ? '' : hm
+    ? (nLegacy ? `<div class="sum legacy"><small>มีรายการแบบเดิม (ก่อนเชื่อมชีต) ${nLegacy} รายการที่ยังไม่ได้ส่งให้ Gemini</small><button class="btn sm" id="lgOpen">เปิดเครื่องมือส่งแบบเดิม</button></div>` : '')
+    : `<div class="sum legacy"><small>โหมดส่งแบบเดิม (Gemini) สำหรับรายการก่อนเชื่อมชีต</small><button class="btn sm" id="lgClose">กลับไปหน้าประวัติ</button></div>`;
+  if(hm){ selected.clear(); if(filter === 'pending' && !db.items.some(i => i.type && i.sync !== 'ok')){ filter = 'month'; offset = 0; sortAsc = true; resetPicks(); } }
+  const nSheetPending = db.items.filter(i => i.type && i.sync !== 'ok').length;
+  $('#exFilters').innerHTML = FILTERS.filter(([k]) => !(hm && k === 'pending' && !nSheetPending)).map(([k,n]) => {
+    const c = k==='pending' ? ` (${hm ? nSheetPending : db.items.filter(notSent).length})` : '';
+    if(k==='pending' && hm) n = 'รอส่งขึ้นชีต';
     if(k==='month' && sd()>1) n = 'รอบเดือน';
     return `<button class="chip${filter===k?' on':''}" data-f="${k}" role="tab" aria-selected="${filter===k}">${n}${c}</button>`;
   }).join('');
@@ -557,7 +577,7 @@ function renderExport(){
   $('#exSum').innerHTML = `
     <small>รายจ่าย${dayPicks.size ? ` ${dayPicks.size} วันที่เลือก` : 'ในมุมมองนี้'} (${exp.length} รายการ)</small>
     <div class="big">${yen(total)}</div>
-    <small>กดเงินสด ${yen(wd)} (ไม่นับเป็นรายจ่าย) · ในตะกร้า ${sel.length} รายการ = ${yen(selTotal)}</small>
+    <small>${hm ? `ย้ายเงิน/รับเงิน ${yen(wd)} (ไม่นับเป็นรายจ่าย)${sheetBudgetLine()}` : `กดเงินสด ${yen(wd)} (ไม่นับเป็นรายจ่าย) · ในตะกร้า ${sel.length} รายการ = ${yen(selTotal)}`}</small>
     <div class="bars">${cats.map(([c,v]) => `<div class="bar"><span>${esc(c)}</span><i style="width:${Math.max(3, v/max*100)}%"></i><span class="n">${yen(v)}</span></div>`).join('')}</div>`;
   $('#exSort').textContent = sortAsc ? 'เรียง: วันเก่า → ใหม่' : 'เรียง: วันใหม่ → เก่า';
 
@@ -570,12 +590,12 @@ function renderExport(){
       const items = vis.filter(i => i.ts.slice(0,10)===k);
       const dt = items.filter(i=>!isWithdraw(i)).reduce((s,i)=>s+i.amount,0);
       const all = items.every(i => selected.has(i.id));
-      out.push(`<li class="dayh"><label class="ck"><input type="checkbox" data-dayall="${k}" ${all?'checked':''} aria-label="เลือกทั้งวัน"></label>
+      out.push(`<li class="dayh">${hm ? '' : `<label class="ck"><input type="checkbox" data-dayall="${k}" ${all?'checked':''} aria-label="เลือกทั้งวัน"></label>`}
         <span>${fmtDay(parseTs(k+'T00:00'))} ${parseTs(k+'T00:00').getFullYear()}</span><span class="n">${yen(dt)}</span></li>`);
     }
     out.push(`
     <li>
-      <label class="ck"><input type="checkbox" data-id="${esc(it.id)}" ${selected.has(it.id)?'checked':''} aria-label="เลือก"></label>
+      ${hm ? '' : `<label class="ck"><input type="checkbox" data-id="${esc(it.id)}" ${selected.has(it.id)?'checked':''} aria-label="เลือก"></label>`}
       <div class="it">
         <div class="t">${esc(it.category)}${it.method?`<span class="tag">${esc(methodName(it.method))}</span>`:''}${statusTag(it)}</div>
         <div class="m">${it.ts.slice(11,16)}${it.note?' · '+esc(it.note):''}</div>
@@ -598,6 +618,16 @@ $('#exCal').onclick = e => {
   renderExport();
 };
 $('#exSort').onclick = () => { sortAsc = !sortAsc; renderExport(); };
+$('#exLegacy').onclick = e => {
+  if(e.target.closest('#lgOpen')){ legacyOpen = true; filter = 'pending'; offset = 0; sortAsc = false; dayPicks.clear(); renderExport(); }
+  if(e.target.closest('#lgClose')){ legacyOpen = false; filter = 'month'; offset = 0; sortAsc = true; resetPicks(); renderExport(); }
+};
+/* Budget used this cycle according to the sheet, plus local items it has not received yet */
+function sheetBudgetLine(){
+  const c = cfg(); if(!c || !(filter === 'month' && offset === 0)) return '';
+  const budget = c.lines.reduce((x,l) => x + l.budget, 0), used = c.lines.reduce((x,l) => x + l.spent + pendingLocal(l.id), 0);
+  return ` · งบรอบนี้ตามชีต ใช้ไป ${yen(used)} จาก ${yen(budget)} (เหลือ ${yen(budget - used)})`;
+}
 $('#exFilters').onclick = e => { const b = e.target.closest('[data-f]'); if(b){ filter = b.dataset.f; offset = 0; sortAsc = isCal(); resetPicks(); renderExport(); } };
 $('#exList').onchange = e => {
   const id = e.target.dataset.id, k = e.target.dataset.dayall;
@@ -680,7 +710,7 @@ $('#exCopy').onclick = () => exportBasket($('#exText'));
 
 /* ================= Basket (floating button + bottom sheet) ================= */
 function renderFab(){
-  const sel = visSelected(), on = $('#v-export').classList.contains('on') && sel.length > 0;
+  const sel = visSelected(), on = $('#v-export').classList.contains('on') && sel.length > 0 && !histMode();
   $('#fab').hidden = !on;
   if(on) $('#fab').innerHTML = `🧺 ตะกร้า <b>${sel.length}</b> · ${yen(sel.filter(i=>!isWithdraw(i)).reduce((s,i)=>s+i.amount,0))}`;
 }
@@ -919,8 +949,11 @@ function chipsHtml(list, cur, attr){
 
 /* ---------- input form in sheet mode ---------- */
 const sx = {type:'expense', line:null, from:null, to:null, fund:null, event:''};
+let sheetViewSet = false;     // open history on the current pay cycle once the sheet is ready
 function renderSheetInput(){
   const on = sheetReady();
+  $('#tabExport').textContent = on ? '📅 ประวัติ' : '📤 ส่งออก';
+  if(on && !sheetViewSet){ sheetViewSet = true; filter = 'month'; offset = 0; sortAsc = true; resetPicks(); }
   $('#localFields').hidden = on; $('#sheetFields').hidden = !on; $('#inType').hidden = !on;
   renderSyncBadge();
   if(!on) return;
