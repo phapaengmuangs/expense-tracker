@@ -446,11 +446,9 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
     <form id="fWallet" autocomplete="off">
       <label class="l" for="waName">ชื่อกระเป๋า</label>
       <input class="f" id="waName" maxlength="60" placeholder="เช่น เงินสด, ゆうちょ, PayPay">
-      <label class="l" for="waOpen">ยอดเปิด</label>
-      <div class="amt"><span>¥</span><input id="waOpen" inputmode="numeric" placeholder="0" aria-label="ยอดเปิด"></div>
-      <label class="l" for="waDate">ยอดนี้เป็นยอด ณ ต้นวันที่</label>
-      <input class="f" type="date" id="waDate">
-      <p class="hint">รายการก่อนวันนี้จะไม่นับในยอดกระเป๋า (แต่ยังนับในสรุปรายจ่าย) · ถ้าจะกรอกรายการย้อนหลัง ให้ใส่ยอด ณ วันแรกที่จะกรอก</p>
+      <label class="l" for="waOpen">ยอดยกมา (ไม่บังคับ)</label>
+      <div class="amt"><span>¥</span><input id="waOpen" inputmode="numeric" placeholder="0" aria-label="ยอดยกมา"></div>
+      <p class="hint">ปกติใส่ ¥0 แล้วให้เงินเข้ามาผ่านรายการ "รับเงิน" หรือ "ย้ายเงิน" · ใส่ยอดยกมาเฉพาะกรณีที่กระเป๋ามีเงินอยู่ก่อนรายการแรกที่จะบันทึก ยอดกระเป๋า = ยอดยกมา + ทุกรายการที่เกี่ยวข้อง</p>
       <div id="waEndW" class="bar2" hidden><button type="button" class="btn warn" id="waDel">ลบ / ซ่อนกระเป๋านี้</button></div>
       <div class="err" id="waErr" role="alert"></div>
       <div class="bar2"><button type="button" class="btn" id="waCancel" style="flex:1">ยกเลิก</button><button class="btn pri" id="waOk" style="flex:2">บันทึก</button></div>
@@ -490,7 +488,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
 const KEY = 'paynote.v1', OLD_KEY = 'expenseTracker.v5';
 const SCHEMA = 1;
 const KINDS = ['wallets', 'categories', 'goals'];
-const FIELDS = {wallets:['name','opening','openDate','order','status'], categories:['parent','name','order','status'], goals:['name','target','due','status','order']};
+const FIELDS = {wallets:['name','opening','order','status'], categories:['parent','name','order','status'], goals:['name','target','due','status','order']};
 const IN_TYPES = [['expense','จ่าย'],['transfer','ย้ายเงิน'],['income','รับเงิน'],['goal_pay','จ่ายจากกระปุก']];
 const TYPE_NAME = {expense:'จ่าย', income:'รับเงิน', transfer:'ย้ายเงิน', goal_pay:'จ่ายจากกระปุก', goal_in:'ใส่กระปุก', goal_out:'ถอนกระปุก', adjust:'ปรับยอด'};
 const FEE_TYPES = ['expense', 'transfer', 'goal_pay'];
@@ -618,7 +616,7 @@ const pending = () => db.items.filter(i => i.sync !== 'ok');
 function effect(t, sign, a){
   if(!t) return;
   const amt = t.amount, fee = t.fee || 0, k = cycleKeyOf(t.ts);
-  const W = (id, v) => { if(!id) return; const w = wOf(id); if(w && w.openDate && t.ts.slice(0,10) < w.openDate) return; a.w[id] = (a.w[id] || 0) + sign*v; };
+  const W = (id, v) => { if(id) a.w[id] = (a.w[id] || 0) + sign*v; };
   const G = (id, v) => { if(id) a.g[id] = (a.g[id] || 0) + sign*v; };
   const C = (id, v) => { if(!id || !v) return; const m = a.c[k] = a.c[k] || {}; m[id] = (m[id] || 0) + sign*v; };
   const T = (name, v) => { const m = a[name]; m[k] = (m[k] || 0) + sign*v; };
@@ -1486,7 +1484,7 @@ function renderSetBody(){
     <p class="hint">รอบปัจจุบัน ${k}: ${cycleTitle(k)} · รอบตั้งชื่อตามเดือนที่รอบสิ้นสุด</p>
 
     <hr><h2>กระเป๋าเงิน</h2>
-    <ul class="sl">${vis.map((w,i) => `<li><span class="nm">${esc(w.name)} ${tag(w)}<small>${yen(wBal(w, D))} · ยอดเปิด ${yen(w.opening || 0)} ณ ${w.openDate ? esc(fmtDate(w.openDate)) : '-'}</small></span>
+    <ul class="sl">${vis.map((w,i) => `<li><span class="nm">${esc(w.name)} ${tag(w)}<small>${yen(wBal(w, D))}${w.opening ? ' · ยอดยกมา ' + yen(w.opening) : ''}</small></span>
       <span class="acts">${updown('wallets', w, i, vis.length)}<button class="icon" data-wed="${esc(w.id)}" aria-label="แก้ไข">✏️</button></span></li>`).join('') || '<li><span class="hint">ยังไม่มีกระเป๋า</span></li>'}</ul>
     <button class="btn sm" id="wAdd">＋ เพิ่มกระเป๋า</button>
     ${hid.length ? `<details class="dl"><summary><div class="drow"><div class="top"><span>กระเป๋าที่ซ่อนไว้ (${hid.length})</span><span></span></div></div></summary>
@@ -1535,7 +1533,7 @@ let walletEdit = null;
 function openWallet(id){
   const w = id ? wOf(id) : null; walletEdit = w ? w.id : null;
   $('#waT').textContent = w ? 'แก้ไขกระเป๋า' : 'เพิ่มกระเป๋าเงิน';
-  $('#waName').value = w ? w.name : ''; $('#waOpen').value = w ? w.opening || 0 : ''; $('#waDate').value = w ? w.openDate || todayStr() : todayStr();
+  $('#waName').value = w ? w.name : ''; $('#waOpen').value = w && w.opening ? w.opening : '';
   $('#waEndW').hidden = !w; $('#waErr').textContent = '';
   if(w) $('#waDel').textContent = w.used || usedLocal('wallets', w.id) ? 'ซ่อนกระเป๋านี้' : 'ลบกระเป๋านี้';
   openM('#mWallet'); if(!w) $('#waName').focus();
@@ -1543,12 +1541,12 @@ function openWallet(id){
 $('#waCancel').onclick = () => closeM('#mWallet');
 $('#fWallet').onsubmit = e => {
   e.preventDefault();
-  const name = $('#waName').value.trim(), oRaw = $('#waOpen').value.trim(), opening = oRaw === '' ? 0 : parseSigned(oRaw), openDate = $('#waDate').value;
-  const err = !name ? 'กรุณาตั้งชื่อกระเป๋า' : isNaN(opening) ? 'ยอดเปิดต้องเป็นตัวเลขจำนวนเต็ม' : !openDate ? 'กรุณาเลือกวันที่'
+  const name = $('#waName').value.trim(), oRaw = $('#waOpen').value.trim(), opening = oRaw === '' ? 0 : parseSigned(oRaw);
+  const err = !name ? 'กรุณาตั้งชื่อกระเป๋า' : isNaN(opening) ? 'ยอดยกมาต้องเป็นตัวเลขจำนวนเต็ม'
     : wallets().some(w => w.name === name && w.id !== walletEdit) ? 'มีกระเป๋าชื่อนี้อยู่แล้ว' : '';
   $('#waErr').textContent = err; if(err) return;
-  if(walletEdit){ const w = wOf(walletEdit); queue('wallets', {id:w.id, name, opening, openDate, order:w.order, status:w.status || 'active'}); }
-  else queue('wallets', {id:rid('w'), name, opening, openDate, order:nextOrder(wallets()), status:'active', isNew:true});
+  if(walletEdit){ const w = wOf(walletEdit); queue('wallets', {id:w.id, name, opening, order:w.order, status:w.status || 'active'}); }
+  else queue('wallets', {id:rid('w'), name, opening, order:nextOrder(wallets()), status:'active', isNew:true});
   persist(); closeM('#mWallet'); renderAll(); toast(`บันทึกกระเป๋า${name}แล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง`);
 };
 $('#waDel').onclick = () => {
@@ -1597,11 +1595,11 @@ function starter(){
     ['อาหาร', ['ทำกินเอง', 'กินข้างนอก']], ['ของใช้', ['ในบ้าน', 'ส่วนตัว']], ['เดินทาง', []], ['สุขภาพ', ['ประกันสุขภาพ', 'ยิม']],
     ['การเรียน', ['วิจัย/ประชุม', 'Subscription']], ['ส่วนตัว', []], ['อื่นๆ', []]];
   const ids = {};
-  W.forEach(([n], i) => { const id = rid('w'); ids[n] = id; queue('wallets', {id, name:n, opening:0, openDate:todayStr(), order:i+1, status:'active', isNew:true}); });
+  W.forEach(([n], i) => { const id = rid('w'); ids[n] = id; queue('wallets', {id, name:n, opening:0, order:i+1, status:'active', isNew:true}); });
   C.forEach(([n, subs], i) => { const id = rid('c'); ids[n] = id; queue('categories', {id, parent:'', name:n, order:i+1, status:'active', isNew:true});
     subs.forEach((s, j) => queue('categories', {id:rid('c'), parent:id, name:s, order:j+1, status:'active', isNew:true})); });
   db.q.settings.goal_wallet = ids['ゆうちょ']; db.q.settings.transfer_fee_category = ids['อื่นๆ'];
-  persist(); renderAll(); toast('เพิ่มชุดตั้งต้นแล้ว · แก้ยอดเปิดของแต่ละกระเป๋าด้วย ✏️ แล้วกดส่งขึ้นชีต');
+  persist(); renderAll(); toast('เพิ่มชุดตั้งต้นแล้ว · กดส่งขึ้นชีต แล้วเริ่มบันทึกรับเงินก้อนแรกได้เลย');
 }
 async function checkPersist(){
   const el = () => $('#stPersist');

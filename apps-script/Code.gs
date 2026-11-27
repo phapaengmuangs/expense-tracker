@@ -24,7 +24,7 @@
 
 const SHEETS = {
   Transactions: ['id', 'วันเวลา', 'ประเภท', 'category_id', 'ยอด (¥)', 'ค่าธรรมเนียม (¥)', 'จากกระเป๋า', 'ไปกระเป๋า', 'goal_id', 'หมายเหตุ', 'ที่มา', 'บันทึกเมื่อ'],
-  Wallets: ['wallet_id', 'ชื่อ', 'ยอดเปิด (¥)', 'ยอด ณ วันที่', 'ลำดับ', 'สถานะ'],
+  Wallets: ['wallet_id', 'ชื่อ', 'ยอดยกมา (¥)', 'ลำดับ', 'สถานะ'],
   Categories: ['category_id', 'หมวดหลัก (parent_id)', 'ชื่อ', 'ลำดับ', 'สถานะ'],
   Goals: ['goal_id', 'ชื่อ', 'เป้าหมาย (¥)', 'วันที่เป้าหมาย', 'สถานะ', 'ลำดับ', 'สร้างเมื่อ'],
   Settings: ['key', 'value', 'คำอธิบาย']
@@ -265,12 +265,11 @@ const day_ = function (s, tz) { return s ? Utilities.parseDate(s + ' 00:00', tz,
 function validateWallet_(w) {
   if (!okName_(w.name)) return 'bad_name';
   if (!Number.isInteger(w.opening) || Math.abs(w.opening) > MAX_AMOUNT) return 'bad_amount';
-  if (!w.openDate || !okDate_(w.openDate)) return 'bad_date';
   if (!Number.isInteger(w.order)) return 'bad_order';
   if (['active', 'hidden'].indexOf(w.status) < 0) return 'bad_status';
   return '';
 }
-function rowWallet_(w, old, tz) { return [w.id, safe_(w.name), w.opening, day_(w.openDate, tz), w.order, w.status]; }
+function rowWallet_(w) { return [w.id, safe_(w.name), w.opening, w.order, w.status]; }
 
 function validateCategory_(c) {
   if (!okName_(c.name)) return 'bad_name';
@@ -405,17 +404,17 @@ function buildConfig_(ss, ref) {
     if (slot >= 0 && r[2] === 'goal_pay') totals.goalPay[slot] += amt;
   });
 
+  /* a wallet's balance: what it held before the first entry, plus every entry that touches it */
   const wallets = ref.wallets.map(function (r) {
-    const id = String(r[0]), open = r[3] instanceof Date ? r[3] : new Date(0);
+    const id = String(r[0]);
     let bal = Number(r[2]) || 0;
     txv.forEach(function (t) {
-      if (t[1] < open) return;
       const amt = Number(t[4]) || 0, fee = Number(t[5]) || 0;
       if (t[7] === id) bal += amt;
       if (t[6] === id) bal -= amt + (t[2] === 'transfer' ? fee : 0);
     });
-    return { id: id, name: String(r[1]), opening: Number(r[2]) || 0, openDate: fmt(r[3]), order: Number(r[4]) || 0,
-             status: r[5] === 'hidden' ? 'hidden' : 'active', balance: bal, used: !!used.wallets[id] };
+    return { id: id, name: String(r[1]), opening: Number(r[2]) || 0, order: Number(r[3]) || 0,
+             status: r[4] === 'hidden' ? 'hidden' : 'active', balance: bal, used: !!used.wallets[id] };
   });
 
   const categories = ref.categories.map(function (r) {
