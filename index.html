@@ -36,6 +36,32 @@ label.l{display:block;font-size:14px;color:var(--sub);margin:16px 0 6px;font-wei
 .amt{display:flex;align-items:baseline;gap:6px;border-bottom:3px solid var(--acc);padding:4px 0}
 .amt span{font-size:36px;font-weight:600;color:var(--acc)}
 .amt input{flex:1;border:0;background:none;font-size:44px;font-weight:700;text-align:right;outline:none;font-variant-numeric:tabular-nums;width:100%}
+/* the amount on the entry form: the one field the eye should land on */
+.amtbox{margin-top:18px;background:color-mix(in srgb,var(--acc) 9%,var(--bg));border:2px solid var(--acc);border-radius:16px;padding:10px 14px 8px}
+.amtbox label{display:block;font-size:14px;font-weight:600;color:var(--acc)}
+.amtbox .amt{border:0;padding:0}
+.amtbox .amt span{font-size:40px}
+.amtbox .amt input{font-size:56px;line-height:1.1}
+.amtbox .amt input::placeholder{color:color-mix(in srgb,var(--acc) 35%,transparent)}
+.amtbox:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 25%,transparent)}
+.pie-root{--s1:#257de0;--s2:#f47230;--s3:#00b894;--s4:#f2a600;--s5:#ee7fac;--s6:#008a17;--s7:#6a4ce2;--s8:#ec4647}
+@media (prefers-color-scheme: dark){:root:where(:not([data-theme="light"])) .pie-root{--s1:#338ced;--s2:#e76624;--s3:#00a888;--s4:#d28e05;--s5:#e24d8b;--s6:#0aac23;--s7:#9887ef;--s8:#eb6263}}
+:root[data-theme="dark"] .pie-root{--s1:#338ced;--s2:#e76624;--s3:#00a888;--s4:#d28e05;--s5:#e24d8b;--s6:#0aac23;--s7:#9887ef;--s8:#eb6263}
+.pie-wrap{display:grid;place-items:center;margin:6px 0 4px}
+.pie-wrap svg{width:min(240px,70vw);height:auto;display:block}
+.pie-wrap path{stroke:var(--card);stroke-width:2;cursor:pointer;transition:opacity .15s}
+.pie-wrap.sel path{opacity:.35}.pie-wrap.sel path.on{opacity:1}
+.pie-pick{text-align:center;font-size:14px;min-height:22px;color:var(--sub)}
+.pie-pick b{color:var(--ink);font-variant-numeric:tabular-nums}
+.lg-row summary{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;cursor:pointer;list-style:none}
+.lg-row summary::-webkit-details-marker{display:none}
+.lg-row{border-bottom:1px dashed var(--rule)}.lg-row:last-child{border-bottom:0}
+.lg-row .sw{width:14px;height:14px;border-radius:4px}
+.lg-row .nm{font-size:15px}.lg-row .nm small{display:block;font-size:12px;color:var(--sub)}
+.lg-row .v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:15px;font-weight:600}
+.lg-row .v small{display:block;font-weight:400;font-size:12px;color:var(--sub)}
+.lg-row.on summary{background:color-mix(in srgb,var(--acc) 8%,transparent);border-radius:8px}
+.lg-row .inner{padding:0 0 8px 22px}
 .row{display:flex;gap:8px;align-items:center}
 input.f,textarea.f,select.f{width:100%;border:1px solid var(--rule);background-color:var(--card);border-radius:10px;padding:11px 12px;font-size:16px;min-height:46px}
 textarea.f{min-height:110px;font-size:14px;font-family:ui-monospace,monospace}
@@ -165,12 +191,11 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
     <form id="fIn" autocomplete="off" hidden>
       <div class="seg" id="inType" role="tablist" aria-label="ประเภทรายการ"></div>
       <button type="button" class="btn sm" id="openRecon" style="width:100%;margin-bottom:8px">🔍 ตรวจยอดกระเป๋าเทียบกับแอปจริง</button>
-      <div class="amt"><span>¥</span><input id="inAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div>
       <div id="fLine">
         <label class="l" for="inCat">หมวดหลัก</label>
         <select class="f" id="inCat"></select>
-        <label class="l" for="inLine">รายการย่อย</label>
-        <select class="f" id="inLine"></select>
+        <div id="fSub"><label class="l" for="inLine">รายการย่อย</label>
+        <select class="f" id="inLine"></select></div>
         <div class="lineinfo" id="inLineInfo" hidden></div>
       </div>
       <div id="fPreset" class="chips" style="margin-top:14px"></div>
@@ -178,6 +203,8 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <div id="fTo"><label class="l" for="inTo">ไปบัญชี</label><select class="f" id="inTo"></select></div>
       <div id="fEvent"><label class="l" for="inEvent">เหตุการณ์ตามแผน (ไม่บังคับ)</label><select class="f" id="inEvent"></select></div>
       <div id="fFund"><label class="l" for="inFund" id="fFundL">กอง</label><select class="f" id="inFund"></select></div>
+      <div class="amtbox"><label for="inAmt">จำนวนเงิน</label>
+        <div class="amt"><span>¥</span><input id="inAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div></div>
       <label class="l" for="inNote">หมายเหตุ (ไม่บังคับ)</label>
       <input class="f" id="inNote" placeholder="เช่น หมู, ผัก">
       <label class="l" for="inTime-d">วันและเวลา (24 ชั่วโมง)</label>
@@ -307,6 +334,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <div id="edFromW"><label class="l" for="edFrom" id="edFromL">จ่ายจาก</label><select class="f" id="edFrom"></select></div>
       <div id="edToW"><label class="l" for="edTo">ไปบัญชี</label><select class="f" id="edTo"></select></div>
       <div id="edFundW"><label class="l" for="edFund">กอง</label><select class="f" id="edFund"></select></div>
+      <div id="edEventW"><label class="l" for="edEvent">เหตุการณ์ตามแผน</label><select class="f" id="edEvent"></select></div>
       <label class="l" for="edNote">หมายเหตุ</label>
       <input class="f" id="edNote">
       <label class="l" for="edTime-d">วันและเวลา (24 ชั่วโมง)</label>
@@ -497,6 +525,7 @@ function renderInput(){
   $('#inCat').innerHTML = '<option value="">เลือกหมวด</option>' + Object.entries(groups).map(([g, ls]) =>
     `<option value="${esc(g)}"${sx.cat===g?' selected':''}>${esc(g)} · ${leftTxt(ls.reduce((x,l) => x + l.budget - lineUsed(l, D), 0))}</option>`).join('');
   const ls = sx.cat ? groups[sx.cat] : [];
+  $('#fSub').hidden = ls.length === 1;            // one item in the category: nothing to choose
   $('#inLine').disabled = !sx.cat;
   $('#inLine').innerHTML = `<option value="">${sx.cat ? 'เลือกรายการ' : 'เลือกหมวดก่อน'}</option>` +
     ls.map(l => `<option value="${esc(l.id)}"${sx.line===l.id?' selected':''}>${esc(l.item)} · ${leftTxt(l.budget - lineUsed(l, D))}</option>`).join('');
@@ -543,8 +572,10 @@ $('#inCat').onchange = e => {
   const ls = lineGroups()[sx.cat] || [];
   if(ls.length === 1) pickLine(ls[0].id);             // a category with one item needs no second pick
   renderInput();
+  if(sx.line) focusAmt();
 };
-$('#inLine').onchange = e => { pickLine(e.target.value); renderInput(); };
+$('#inLine').onchange = e => { pickLine(e.target.value); renderInput(); if(sx.line) focusAmt(); };
+const focusAmt = () => { const a = $('#inAmt'); a.scrollIntoView({block:'center', behavior:'smooth'}); a.focus({preventScroll:true}); };
 $('#inFrom').onchange = e => { sx.from = e.target.value; if(sx.to === sx.from) sx.to = ''; renderInput(); };
 $('#inTo').onchange = e => { sx.to = e.target.value; renderInput(); };
 $('#inFund').onchange = e => { sx.fund = e.target.value; renderInput(); };
@@ -847,14 +878,7 @@ function renderDash(){
       <div class="kpi"><small>เหลือเก็บตามงบ</small><b>${yen(c.income - budget)}</b></div>
     </div>
   </div>
-  <div class="card"><h2>งบตามหมวด</h2>
-    ${cats.map(x => `<details class="dl drow"><summary>
-        <div class="top"><span>${esc(x.g)}</span><span class="${x.u > x.b ? 'over-t' : ''}">${leftTxt(x.b - x.u)}</span></div>
-        ${meter(x.u, x.b)}<div class="sub">ใช้ไป ${yen(x.u)} จาก ${yen(x.b)}</div></summary>
-        <div class="inner">${x.ls.map(l => { const u = lineUsed(l, D);
-          return `<div class="drow"><div class="top"><span>${esc(l.item)}</span><span class="${u > l.budget ? 'over-t' : ''}">${leftTxt(l.budget - u)}</span></div>${meter(u, l.budget)}<div class="sub">${yen(u)} / ${yen(l.budget)} · ${esc(l.channel)}</div></div>`; }).join('')}</div>
-      </details>`).join('')}
-  </div>
+  ${pieCard(cats, D)}
   <div class="card"><h2>ยอดเงินแต่ละบัญชี</h2>
     ${c.accounts.map(a => { const b = accBal(a, D); return `<div class="drow"><div class="top"><span>${esc(a.name)} <button class="lnk" data-recon="${esc(a.id)}">ตรวจยอด</button></span><span class="${b < 0 ? 'over-t' : ''}">${yen(b)}</span></div></div>`; }).join('')}
   </div>
@@ -870,6 +894,60 @@ function renderDash(){
   </div>
   <p class="hint">ข้อมูลจากชีต ณ ${t ? esc(fmtDT(toLocalInput(t))) : '-'}${n ? ` รวมรายการที่รอส่ง ${n} รายการ` : ''}</p>`;
 }
+
+/* ---------- pie of the cycle by main category ----------
+   Colour follows the category (its order in BudgetLines), never its size, so a slice keeps
+   its colour from one cycle to the next. Every slice also has a labelled legend row. */
+let pieMode = '', piePick = '';
+function pieCard(cats, D){
+  const byOrder = Object.keys(lineGroups());
+  const slot = g => 'var(--s' + (Math.min(byOrder.indexOf(g), 7) + 1) + ')';
+  const usedTotal = cats.reduce((x,c) => x + c.u, 0);
+  const mode = pieMode || (usedTotal > 0 ? 'used' : 'budget');
+  const val = c => mode === 'used' ? Math.max(0, c.u) : c.b;
+  const rows = cats.map(c => ({...c, v: val(c)})).sort((a,b) => b.v - a.v);
+  const total = rows.reduce((x,r) => x + r.v, 0);
+  const R = 100, cx = 110, cy = 110;
+  let a0 = -Math.PI/2, paths = '';
+  const live = rows.filter(r => r.v > 0);
+  live.forEach(r => {
+    const frac = r.v / total, a1 = a0 + frac * 2 * Math.PI;
+    const on = piePick === r.g ? ' on' : '';
+    if(live.length === 1){
+      paths += `<path class="${on}" data-pie="${esc(r.g)}" d="M ${cx} ${cy-R} A ${R} ${R} 0 1 1 ${cx-0.01} ${cy-R} Z" style="fill:${slot(r.g)}"><title>${esc(r.g)} ${yen(r.v)}</title></path>`;
+    } else {
+      const x0 = cx + R*Math.cos(a0), y0 = cy + R*Math.sin(a0), x1 = cx + R*Math.cos(a1), y1 = cy + R*Math.sin(a1);
+      paths += `<path class="${on}" data-pie="${esc(r.g)}" d="M ${cx} ${cy} L ${x0.toFixed(2)} ${y0.toFixed(2)} A ${R} ${R} 0 ${frac > .5 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z" style="fill:${slot(r.g)}"><title>${esc(r.g)} ${yen(r.v)} (${(frac*100).toFixed(1)}%)</title></path>`;
+    }
+    a0 = a1;
+  });
+  const pick = rows.find(r => r.g === piePick);
+  const pickTxt = pick ? `<b>${esc(pick.g)}</b> · <b>${yen(pick.v)}</b> · ${total ? (pick.v/total*100).toFixed(1) : 0}% ${mode === 'used' ? 'ของที่ใช้ไป' : 'ของงบ'} · ${leftTxt(pick.b - pick.u)}`
+    : (total ? 'แตะชิ้นพายหรือชื่อหมวดเพื่อดูรายละเอียด' : 'ยังไม่มีรายจ่ายในรอบนี้');
+  return `<div class="card pie-root"><h2>สัดส่วนตามหมวด</h2>
+    <div class="chips" id="pieMode" role="tablist">
+      <button type="button" class="chip${mode==='used'?' on':''}" data-pm="used" role="tab" aria-selected="${mode==='used'}">ใช้จริงรอบนี้ ${yen(usedTotal)}</button>
+      <button type="button" class="chip${mode==='budget'?' on':''}" data-pm="budget" role="tab" aria-selected="${mode==='budget'}">งบที่วางไว้ ${yen(cats.reduce((x,c) => x + c.b, 0))}</button>
+    </div>
+    <div class="pie-wrap${piePick ? ' sel' : ''}">${total ? `<svg viewBox="0 0 220 220" role="img" aria-label="สัดส่วน${mode === 'used' ? 'รายจ่าย' : 'งบ'}ตามหมวด">${paths}</svg>` : ''}</div>
+    <div class="pie-pick">${pickTxt}</div>
+    <div>${rows.map(r => `<details class="lg-row${piePick === r.g ? ' on' : ''}" data-lg="${esc(r.g)}"${piePick === r.g ? ' open' : ''}><summary>
+        <span class="sw" style="background:${slot(r.g)}"></span>
+        <span class="nm">${esc(r.g)}<small>${mode === 'used' ? 'งบ ' + yen(r.b) + ' · ' + leftTxt(r.b - r.u) : 'ใช้ไป ' + yen(r.u)}</small></span>
+        <span class="v ${mode === 'used' && r.u > r.b ? 'over-t' : ''}">${yen(r.v)}<small>${total ? (r.v/total*100).toFixed(1) : '0.0'}%</small></span></summary>
+        <div class="inner">${r.ls.map(l => { const u = lineUsed(l, D);
+          return `<div class="drow"><div class="top"><span>${esc(l.item)}</span><span class="${u > l.budget ? 'over-t' : ''}">${leftTxt(l.budget - u)}</span></div>${meter(u, l.budget)}<div class="sub">${yen(u)} / ${yen(l.budget)} · ${esc(l.channel)}</div></div>`; }).join('')}</div>
+      </details>`).join('')}</div>
+  </div>`;
+}
+$('#dash').addEventListener('click', e => {
+  const m = e.target.closest('[data-pm]');
+  if(m){ pieMode = m.dataset.pm; piePick = ''; renderDash(); return; }
+  const p = e.target.closest('[data-pie]');
+  if(p){ piePick = piePick === p.dataset.pie ? '' : p.dataset.pie; renderDash(); return; }
+  const s = e.target.closest('.lg-row summary');
+  if(s){ e.preventDefault(); const g = s.parentElement.dataset.lg; piePick = piePick === g ? '' : g; renderDash(); }
+});
 
 /* ================= History ================= */
 const FILTERS = [['today','วันนี้'],['week','สัปดาห์'],['month','รอบเดือน'],['all','ทั้งหมด'],['pending','รอส่ง']];
@@ -1001,6 +1079,11 @@ function openEdit(id){
   $('#edTo').innerHTML = accOpts(it.to, D, '', 'เลือกบัญชี');
   $('#edFundW').hidden = !(t === 'one_time' || t === 'income');
   $('#edFund').innerHTML = fundOpts(t === 'one_time' ? it.fromFund : it.toFund, D, t === 'one_time' ? 'เลือกกอง' : 'ไม่เข้ากอง');
+  $('#edEventW').hidden = !(t === 'one_time' || t === 'income');
+  const kind = t === 'one_time' ? 'จ่าย' : 'รับ';
+  const evs = cfg().events.filter(e => e.kind === kind && (e.id === it.eventId || (!e.done && !D.done.has(e.id))));
+  $('#edEvent').innerHTML = '<option value="">ไม่ผูกกับเหตุการณ์</option>' +
+    evs.map(e => `<option value="${esc(e.id)}"${e.id===it.eventId?' selected':''}>${esc(e.date)} · ${esc(e.name)} · ${yen(e.amount)}</option>`).join('');
   openM('#mEdit');
 }
 $('#edCancel').onclick = () => closeM('#mEdit');
@@ -1018,8 +1101,9 @@ $('#fEd').onsubmit = e => {
   Object.assign(it, {amount, ts, note:$('#edNote').value.trim(), updatedAt:new Date().toISOString()});
   if(t === 'expense') Object.assign(it, {lineId:l.id, from, category:l.item});
   if(t === 'transfer') Object.assign(it, {from, to, category:`ย้ายเงิน ${accName(from)} → ${accName(to)}`});
-  if(t === 'income') Object.assign(it, {to, toFund:fund});
-  if(t === 'one_time') Object.assign(it, {from, fromFund:fund});
+  const ev = $('#edEvent').value, evObj = ev ? cfg().events.find(x => x.id === ev) : null;
+  if(t === 'income') Object.assign(it, {to, toFund:fund, eventId:ev, category:'รับเงิน ' + (evObj ? evObj.name : accName(to))});
+  if(t === 'one_time') Object.assign(it, {from, fromFund:fund, eventId:ev, category: evObj ? evObj.name : 'จ่ายจากกอง ' + fundName(fund)});
   it.sync = 'pending'; delete it.syncError;
   persist(); closeM('#mEdit'); renderAll();
   toast('แก้ไขแล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง');
