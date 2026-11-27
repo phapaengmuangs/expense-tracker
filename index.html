@@ -208,6 +208,18 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
 .ev small{grid-column:2/-1;color:var(--sub);font-size:12px}
 .lnk{border:0;background:none;color:var(--acc);text-decoration:underline;padding:0;font-size:13px}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+/* settings lists */
+.sl{list-style:none;margin:6px 0;padding:0}
+.sl li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--rule)}
+.sl li.sub{padding-left:22px}
+.sl li.sub .nm::before{content:'└ ';color:var(--sub)}
+.sl .nm{font-weight:600;overflow-wrap:anywhere}
+.sl .nm small{display:block;font-weight:400;color:var(--sub);font-size:12px}
+.sl .acts{display:flex;gap:2px;align-items:center}
+.sl .icon{width:36px;height:36px;font-size:15px}
+.warnbox{background:color-mix(in srgb,var(--amber) 14%,var(--bg));border:1.5px solid var(--amber);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:14px}
+.warnbox b{font-variant-numeric:tabular-nums}
+.impact .warnline{color:var(--amber);font-weight:600}
 </style>
 </head>
 <body>
@@ -218,27 +230,27 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
   <section id="v-input" class="view on" aria-label="บันทึก">
     <h1>บันทึกรายการ</h1>
     <div class="card need" hidden><p>ยังไม่ได้เชื่อมต่อ Google Sheet</p><button class="btn pri goSet">ไปที่ตั้งค่า</button></div>
+    <div class="card" id="inSetup" hidden><p>ยังไม่มีกระเป๋าเงินหรือหมวด · ตั้งค่าก่อนเริ่มบันทึก</p><button class="btn pri goSet">ไปที่ตั้งค่า</button></div>
     <form id="fIn" autocomplete="off" hidden>
       <div class="seg" id="inType" role="tablist" aria-label="ประเภทรายการ"></div>
       <button type="button" class="btn sm" id="openRecon" style="width:100%;margin-bottom:8px">🔍 ตรวจยอดกระเป๋าเทียบกับแอปจริง</button>
-      <div id="fLine">
-        <label class="l" for="inCat">หมวดหลัก</label>
-        <select class="f" id="inCat"></select>
-        <div id="fSub"><label class="l" for="inLine">รายการย่อย</label>
-        <select class="f" id="inLine"></select></div>
-        <div class="lineinfo" id="inLineInfo" hidden></div>
+      <div id="fCat">
+        <label class="l" for="inMain">หมวด</label>
+        <select class="f" id="inMain"></select>
+        <div id="fSub"><label class="l" for="inSub">หมวดย่อย</label><select class="f" id="inSub"></select></div>
+        <div class="lineinfo" id="inCatInfo" hidden></div>
       </div>
-      <div id="fPreset" class="chips" style="margin-top:14px"></div>
+      <div id="fGoal"><label class="l" for="inGoal">จ่ายจากกระปุก</label><select class="f" id="inGoal"></select></div>
+      <div id="fRecent" class="chips" style="margin-top:14px"></div>
       <div id="fFrom"><label class="l" for="inFrom" id="fFromL">จ่ายจาก</label><select class="f" id="inFrom"></select></div>
-      <div id="fTo"><label class="l" for="inTo">ไปบัญชี</label><select class="f" id="inTo"></select></div>
-      <div id="fFund"><label class="l" for="inFund" id="fFundL">กระปุก</label><select class="f" id="inFund"></select></div>
+      <div id="fTo"><label class="l" for="inTo" id="fToL">ไปกระเป๋า</label><select class="f" id="inTo"></select></div>
       <div class="amtbox"><label for="inAmt">จำนวนเงิน</label>
         <div class="amt"><span>¥</span><input id="inAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div></div>
       <div id="fFeeW">
-        <button type="button" class="btn sm" id="feeToggle" style="margin-top:8px">+ ค่าธรรมเนียม</button>
+        <button type="button" class="btn sm" id="feeToggle" style="margin-top:8px">＋ ค่าธรรมเนียม</button>
         <div id="feeBox" hidden>
           <label class="l" for="inFee">ค่าธรรมเนียม</label>
-          <div class="row"><input class="f" id="inFee" inputmode="numeric" pattern="[0-9]*" placeholder="เช่น 203"><button type="button" class="btn sm" id="feeOff">เอาออก</button></div>
+          <div class="row"><input class="f" id="inFee" inputmode="numeric" pattern="[0-9]*" placeholder="เช่น 110"><button type="button" class="btn sm" id="feeOff">เอาออก</button></div>
           <p class="hint" id="feeHint"></p>
         </div>
       </div>
@@ -258,7 +270,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
   <!-- ============ DASHBOARD ============ -->
   <section id="v-dash" class="view" aria-label="ภาพรวม">
     <h1>ภาพรวม</h1>
-    <div class="card need" hidden><p>เชื่อมต่อ Google Sheet ที่แท็บตั้งค่า เพื่อดูว่าเงินไปทางไหน และยอดแต่ละบัญชี</p><button class="btn pri goSet">ไปที่ตั้งค่า</button></div>
+    <div class="card need" hidden><p>เชื่อมต่อ Google Sheet ที่แท็บตั้งค่า เพื่อดูว่าเงินไปทางไหน</p><button class="btn pri goSet">ไปที่ตั้งค่า</button></div>
     <div id="dash"></div>
   </section>
 
@@ -283,7 +295,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
   <!-- ============ SETTINGS ============ -->
   <section id="v-set" class="view" aria-label="ตั้งค่า">
     <h1>ตั้งค่า</h1>
-    <label class="l">เชื่อมต่อ Google Sheet</label>
+    <h2>เชื่อมต่อ Google Sheet</h2>
     <div class="sum" id="shStatus"></div>
     <input class="f" id="shUrl" inputmode="url" placeholder="URL ของ Web app (https://script.google.com/macros/s/…/exec)" autocomplete="off">
     <input class="f" id="shToken" type="password" placeholder="TOKEN จาก setupToken()" style="margin-top:8px" autocomplete="off">
@@ -291,10 +303,10 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <button class="btn pri" id="shConnect">บันทึกและเชื่อมต่อ</button>
       <button class="btn" id="shPull">รีเฟรชข้อมูลจากชีต</button>
     </div>
-    <p class="hint">บัญชีและหมวดมาจากชีต ถ้าจะเพิ่มบัญชีหรือหมวดใหม่ ให้เพิ่มแถวในแท็บ Accounts หรือ Categories แล้วกดรีเฟรช · กระปุกสร้างและแก้ได้ในแท็บกระปุก</p>
+    <div id="setBody"></div>
     <hr>
+    <h2>สำรองข้อมูลในเครื่อง</h2>
     <div class="sum" id="stInfo"></div>
-    <label class="l">สำรองข้อมูลในเครื่อง</label>
     <div class="bar2">
       <button class="btn" id="stDl">ดาวน์โหลดไฟล์สำรอง (.json)</button>
       <button class="btn" id="stCopyJson">คัดลอก JSON</button>
@@ -306,9 +318,9 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
     </div>
     <textarea class="f" id="stPaste" placeholder="หรือวาง JSON ที่นี่"></textarea>
     <div class="bar2"><button class="btn" id="stImport">นำเข้าจากข้อความที่วาง</button></div>
-    <hr>
     <div class="bar2"><button class="btn warn" id="stClear">ล้างประวัติที่ส่งขึ้นชีตแล้ว</button></div>
     <p class="hint">ลบเฉพาะประวัติในเครื่องนี้ ข้อมูลในชีตไม่เปลี่ยน รายการที่ยังรอส่งจะไม่ถูกลบ</p>
+    <div id="oldData"></div>
   </section>
 </main>
 
@@ -348,19 +360,19 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
 <div class="modal" id="mRecon" role="dialog" aria-modal="true" aria-labelledby="rcT">
   <div class="sheet">
     <h1 id="rcT">ตรวจยอดกระเป๋า</h1>
-    <label class="l" for="rcAcc">กระเป๋า / บัญชี</label>
+    <label class="l" for="rcAcc">กระเป๋า</label>
     <select class="f" id="rcAcc"></select>
-    <label class="l" for="rcReal">ยอดจริงที่เห็นในแอป</label>
+    <label class="l" for="rcReal">ยอดจริงที่เห็นในแอปหรือในกระเป๋า</label>
     <div class="amt"><span>¥</span><input id="rcReal" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="ยอดจริง"></div>
     <div class="lineinfo" id="rcDiff" hidden></div>
     <div id="rcWhy" hidden>
       <label class="l">ส่วนต่างนี้คืออะไร</label>
       <div class="chips" id="rcKind"></div>
-      <div id="rcLineW" hidden>
-        <label class="l" for="rcCat">หมวดหลัก</label><select class="f" id="rcCat"></select>
-        <label class="l" for="rcLine">รายการย่อย</label><select class="f" id="rcLine"></select>
+      <div id="rcCatW" hidden>
+        <label class="l" for="rcMain">หมวด</label><select class="f" id="rcMain"></select>
+        <div id="rcSubW"><label class="l" for="rcSub">หมวดย่อย</label><select class="f" id="rcSub"></select></div>
       </div>
-      <div id="rcSrcW" hidden><label class="l" for="rcSrc">เติมมาจากบัญชี</label><select class="f" id="rcSrc"></select></div>
+      <div id="rcSrcW" hidden><label class="l" for="rcSrc">เติมมาจากกระเป๋า</label><select class="f" id="rcSrc"></select></div>
     </div>
     <label class="l" for="rcNote">หมายเหตุ (ไม่บังคับ)</label>
     <input class="f" id="rcNote" placeholder="เช่น ขนมที่ลืมบันทึก, แต้มคืน">
@@ -375,11 +387,11 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
     <h1 id="edT">แก้ไขรายการ</h1>
     <form id="fEd" autocomplete="off">
       <div class="amt"><span>¥</span><input id="edAmt" inputmode="numeric" pattern="[0-9]*" aria-label="จำนวนเงิน"></div>
-      <div id="edLineW"><label class="l" for="edLine">หมวด</label><select class="f" id="edLine"></select></div>
+      <div id="edFeeW"><label class="l" for="edFee">ค่าธรรมเนียม (เว้นว่าง = ไม่มี)</label><input class="f" id="edFee" inputmode="numeric" pattern="[0-9]*" placeholder="0"></div>
+      <div id="edCatW"><label class="l" for="edCat">หมวด</label><select class="f" id="edCat"></select></div>
+      <div id="edGoalW"><label class="l" for="edGoal">กระปุก</label><select class="f" id="edGoal"></select></div>
       <div id="edFromW"><label class="l" for="edFrom" id="edFromL">จ่ายจาก</label><select class="f" id="edFrom"></select></div>
-      <div id="edToW"><label class="l" for="edTo">ไปบัญชี</label><select class="f" id="edTo"></select></div>
-      <div id="edFundW"><label class="l" for="edFund">กระปุก</label><select class="f" id="edFund"></select></div>
-      <div id="edFeeW"><label class="l" for="edFee">ค่าธรรมเนียม (เว้นว่าง = ไม่มี)</label><input class="f" id="edFee" inputmode="numeric" pattern="[0-9]*" placeholder="0"><p class="hint" id="edFeeHint"></p></div>
+      <div id="edToW"><label class="l" for="edTo" id="edToL">ไปกระเป๋า</label><select class="f" id="edTo"></select></div>
       <label class="l" for="edNote">หมายเหตุ</label>
       <input class="f" id="edNote">
       <label class="l" for="edTime-d">วันและเวลา (24 ชั่วโมง)</label>
@@ -394,9 +406,9 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
 <div class="modal" id="mGoal" role="dialog" aria-modal="true" aria-labelledby="goT">
   <div class="sheet">
     <h1 id="goT">สร้างกระปุก</h1>
-    <form id="fGoal" autocomplete="off">
+    <form id="fGoalEd" autocomplete="off">
       <label class="l" for="goName">ชื่อกระปุก</label>
-      <input class="f" id="goName" maxlength="60" placeholder="เช่น iPad, ทริปโอกินาวา, เงินฉุกเฉิน">
+      <input class="f" id="goName" maxlength="60" placeholder="เช่น ย้ายห้อง, ทริปเกะโระ, เงินฉุกเฉิน">
       <label class="l" for="goTarget">เป้าหมาย</label>
       <div class="amt"><span>¥</span><input id="goTarget" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="เป้าหมาย"></div>
       <label class="l" for="goDue">อยากได้ภายในวันที่ (ไม่บังคับ)</label>
@@ -404,8 +416,8 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <p class="hint">ถ้าใส่วันที่ แอปจะบอกว่าต้องใส่เงินเดือนละเท่าไรถึงจะทัน</p>
       <div id="goStartW"><label class="l" for="goStart">ใส่เงินเริ่มต้นเลย (ไม่บังคับ)</label>
         <div class="amt"><span>¥</span><input id="goStart" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="เงินเริ่มต้น"></div>
-        <p class="hint">เงินยังอยู่ใน ゆうちょ เหมือนเดิม กระปุกแค่แบ่งไว้ว่าเงินก้อนนี้มีไว้ทำอะไร</p></div>
-      <div id="goCloseW" class="bar2" hidden><button type="button" class="btn warn" id="goClose">ปิดกระปุกนี้</button></div>
+        <p class="hint" id="goStartHint"></p></div>
+      <div id="goEndW" class="bar2" hidden><button type="button" class="btn warn" id="goClose">ปิดกระปุกนี้</button><button type="button" class="btn warn" id="goDel">ลบกระปุก</button></div>
       <div class="err" id="goErr" role="alert"></div>
       <div class="bar2"><button type="button" class="btn" id="goCancel" style="flex:1">ยกเลิก</button><button class="btn pri" id="goOk" style="flex:2">สร้างกระปุก</button></div>
     </form>
@@ -419,10 +431,45 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
     <div class="lineinfo" id="mvInfo"></div>
     <div class="amtbox"><label for="mvAmt">จำนวนเงิน</label>
       <div class="amt"><span>¥</span><input id="mvAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div></div>
+    <p class="hint" id="mvHint"></p>
     <label class="l" for="mvNote">หมายเหตุ (ไม่บังคับ)</label>
     <input class="f" id="mvNote" placeholder="เช่น เก็บจากทุนเดือนนี้">
     <div class="err" id="mvErr" role="alert"></div>
     <div class="bar2"><button type="button" class="btn" id="mvCancel" style="flex:1">ยกเลิก</button><button type="button" class="btn pri" id="mvOk" style="flex:2">ตรวจรายการก่อนบันทึก</button></div>
+  </div>
+</div>
+
+<!-- add or edit a wallet -->
+<div class="modal" id="mWallet" role="dialog" aria-modal="true" aria-labelledby="waT">
+  <div class="sheet">
+    <h1 id="waT">เพิ่มกระเป๋าเงิน</h1>
+    <form id="fWallet" autocomplete="off">
+      <label class="l" for="waName">ชื่อกระเป๋า</label>
+      <input class="f" id="waName" maxlength="60" placeholder="เช่น เงินสด, ゆうちょ, PayPay">
+      <label class="l" for="waOpen">ยอดเปิด</label>
+      <div class="amt"><span>¥</span><input id="waOpen" inputmode="numeric" placeholder="0" aria-label="ยอดเปิด"></div>
+      <label class="l" for="waDate">ยอดนี้เป็นยอด ณ ต้นวันที่</label>
+      <input class="f" type="date" id="waDate">
+      <p class="hint">รายการก่อนวันนี้จะไม่นับในยอดกระเป๋า (แต่ยังนับในสรุปรายจ่าย) · ถ้าจะกรอกรายการย้อนหลัง ให้ใส่ยอด ณ วันแรกที่จะกรอก</p>
+      <div id="waEndW" class="bar2" hidden><button type="button" class="btn warn" id="waDel">ลบ / ซ่อนกระเป๋านี้</button></div>
+      <div class="err" id="waErr" role="alert"></div>
+      <div class="bar2"><button type="button" class="btn" id="waCancel" style="flex:1">ยกเลิก</button><button class="btn pri" id="waOk" style="flex:2">บันทึก</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- add or edit a category -->
+<div class="modal" id="mCat" role="dialog" aria-modal="true" aria-labelledby="caT">
+  <div class="sheet">
+    <h1 id="caT">เพิ่มหมวด</h1>
+    <form id="fCatEd" autocomplete="off">
+      <p class="hint" id="caParent"></p>
+      <label class="l" for="caName">ชื่อหมวด</label>
+      <input class="f" id="caName" maxlength="60" placeholder="เช่น อาหาร, ค่าไฟฟ้า">
+      <div id="caEndW" class="bar2" hidden><button type="button" class="btn warn" id="caDel">ลบหมวดนี้</button></div>
+      <div class="err" id="caErr" role="alert"></div>
+      <div class="bar2"><button type="button" class="btn" id="caCancel" style="flex:1">ยกเลิก</button><button class="btn pri" id="caOk" style="flex:2">บันทึก</button></div>
+    </form>
   </div>
 </div>
 
@@ -438,48 +485,28 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
 /* ================= Storage =================
    Entries are kept on the phone first. Nothing goes to the sheet until the user reviews
    the queue and confirms. Each entry remembers what the sheet last received (`synced`),
-   so spending, balances and goals stay right while edits and deletes are waiting.
-   Goal (กระปุก) changes wait in `goalQ` the same way and go up in the same push. */
-const KEY = 'expenseTracker.v5';
-const SCHEMA = 3;
-const TYPES = [['expense','จ่าย'],['transfer','ย้ายเงิน'],['income','รับเงิน'],['one_time','จ่ายจากกระปุก']];
-const TYPE_NAME = Object.assign(Object.fromEntries(TYPES), {adjust:'ปรับยอด', fund_move:'กระปุก'});
-const TRANSFER_PRESETS = [
-  {name:'กดเงินสด', from:'yucho', to:'cash'}, {name:'เติม Co-op', from:'cash', to:'coop'},
-  {name:'ชาร์จ Rakuten Pay', from:'cash', to:'rakutenpay'}, {name:'เติม PayPay', from:'yucho', to:'paypay'}];
+   so totals and balances stay right while edits and deletes are waiting.
+   Setup changes (wallets, categories, goals, settings) wait in `q` and go up in the same push. */
+const KEY = 'paynote.v1', OLD_KEY = 'expenseTracker.v5';
+const SCHEMA = 1;
+const KINDS = ['wallets', 'categories', 'goals'];
+const FIELDS = {wallets:['name','opening','openDate','order','status'], categories:['parent','name','order','status'], goals:['name','target','due','status','order']};
+const IN_TYPES = [['expense','จ่าย'],['transfer','ย้ายเงิน'],['income','รับเงิน'],['goal_pay','จ่ายจากกระปุก']];
+const TYPE_NAME = {expense:'จ่าย', income:'รับเงิน', transfer:'ย้ายเงิน', goal_pay:'จ่ายจากกระปุก', goal_in:'ใส่กระปุก', goal_out:'ถอนกระปุก', adjust:'ปรับยอด'};
+const FEE_TYPES = ['expense', 'transfer', 'goal_pay'];
 
+const emptyQ = () => ({wallets:{}, categories:{}, goals:{}, settings:{}});
 let db = load();
 function load(){
-  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.items)) return migrate(d); }catch(e){}
-  return {schemaVersion:SCHEMA, items:[], sheet:null, goalQ:{}};
-}
-function migrate(d){
-  if(d.schemaVersion === SCHEMA) return d;
-  if(d.schemaVersion !== 2) d = migrate1(d);
-  // version 3 drops planned events (the sheet no longer has them) and adds the goal queue
-  d.items.forEach(i => { i.eventId = ''; if(i.synced) i.synced.eventId = ''; });
-  return {schemaVersion:SCHEMA, items:d.items, sheet:d.sheet, goalQ:{}};
-}
-function migrate1(d){
-  // version 1 also held Gemini-era entries without a type; only sheet entries carry over
-  const snap = i => ({type:i.type, lineId:i.lineId||'', amount:i.amount, ts:i.ts, from:i.from||'', to:i.to||'', fromFund:i.fromFund||'', toFund:i.toFund||'', eventId:i.eventId||''});
-  const items = d.items.filter(i => i.type).map(i => {
-    const n = {id:i.id, ts:i.ts, type:i.type, lineId:i.lineId||'', category:i.category, amount:i.amount, note:i.note||'',
-      from: i.type === 'income' ? '' : (i.from || i.method || ''), to: i.to || i.toAccount || '',
-      fromFund:i.fromFund||'', toFund:i.toFund||'', eventId:i.eventId||'',
-      sync: i.sync === 'ok' ? 'ok' : 'pending', createdAt:i.createdAt, updatedAt:i.updatedAt};
-    if(i.syncedOnce) n.synced = snap(n);      // best guess: what the sheet holds is the current version
-    return n;
-  });
-  const s = d.sheet && d.sheet.url ? {url:d.sheet.url, token:d.sheet.token || '', config:d.sheet.config || null,
-    deletes:(d.sheet.deletes || []).map(x => typeof x === 'string' ? {id:x} : x), lastSync:d.sheet.lastSync || null, lastError:''} : null;
-  return {schemaVersion:2, items, sheet:s};
+  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.items)){ d.q = Object.assign(emptyQ(), d.q || {}); d.last = d.last || {}; return d; } }catch(e){}
+  return {schemaVersion:SCHEMA, items:[], sheet:null, q:emptyQ(), last:{}};
 }
 function persist(){
   try{ localStorage.setItem(KEY, JSON.stringify(db)); return true; }
   catch(e){ toast('⚠️ บันทึกลงเครื่องไม่สำเร็จ: ' + e.message); return false; }
 }
-const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const rid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : rid('t'));
 
 /* ================= Helpers ================= */
 const $ = s => document.querySelector(s);
@@ -488,16 +515,20 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const yen = n => (n < 0 ? '-¥' : '¥') + Math.abs(Number(n)).toLocaleString('en-US');
 const pad = n => String(n).padStart(2,'0');
 const toLocalInput = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const todayStr = () => toLocalInput(new Date()).slice(0,10);
 const parseTs = s => new Date(s);              // "YYYY-MM-DDTHH:mm" is read as local time
 const DOW = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 const TH_MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const fmtDT = s => { const d = parseTs(s); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const fmtDay = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)} (${DOW[d.getDay()]})`;
-const parseAmt = v => { const s = String(v).replace(/[,\s¥]/g,''); return /^\d+$/.test(s) ? parseInt(s,10) : NaN; };
-const isMove = it => it.type === 'transfer' || it.type === 'income' || it.type === 'adjust' || it.type === 'fund_move';     // not spending
-const dayMs = 864e5;
 const dOnly = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
 const fmtDate = s => { const d = dOnly(s); return `${d.getDate()} ${TH_MON[d.getMonth()]} ${d.getFullYear()}`; };
+const parseAmt = v => { const s = String(v).replace(/[,\s¥]/g,''); return /^\d+$/.test(s) ? parseInt(s,10) : NaN; };
+const parseSigned = v => { const s = String(v).replace(/[,\s¥]/g,''); return /^-?\d+$/.test(s) ? parseInt(s,10) : NaN; };
+const dayMs = 864e5;
+/* money that leaves for spending: an expense or a goal payment in full, a transfer only its fee */
+const spendOf = it => it.type === 'expense' || it.type === 'goal_pay' ? it.amount : it.type === 'transfer' ? (it.fee || 0) : 0;
+const isMove = it => !spendOf(it);
 
 /* 24-hour picker: date + hour (00–23) + minute (00–59), independent of the phone's AM/PM setting */
 const opts = n => Array.from({length:n}, (_,i) => `<option value="${pad(i)}">${pad(i)}</option>`).join('');
@@ -517,97 +548,125 @@ function toast(msg, actLabel, act){
   const b = $('#toastAct'); b.hidden = !actLabel; b.textContent = actLabel || '';
   b.onclick = () => { act && act(); hideToast(); };
   $('#toast').classList.add('on');
-  clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, actLabel ? 5000 : 2400);
+  clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, actLabel ? 5000 : 2600);
 }
 function hideToast(){ $('#toast').classList.remove('on'); }
-function ask(title, body, onYes){
-  $('#cfT').textContent = title; $('#cfB').textContent = body; $('#mConfirm').classList.add('on');
+function ask(title, body, onYes, yesLabel){
+  $('#cfT').textContent = title; $('#cfB').textContent = body; $('#cfYes').textContent = yesLabel || 'ยืนยัน'; $('#mConfirm').classList.add('on');
   $('#cfYes').onclick = () => { $('#mConfirm').classList.remove('on'); onYes(); };
   $('#cfNo').onclick = () => $('#mConfirm').classList.remove('on');
 }
 const openM = id => $(id).classList.add('on'), closeM = id => $(id).classList.remove('on');
 $$('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m && m.id !== 'mConfirm') m.classList.remove('on'); }));
 
-/* ================= Sheet data ================= */
+/* ================= Sheet data, with waiting changes laid over the top ================= */
 const cfg = () => (db.sheet && db.sheet.config) || null;
 const sheetOn = () => !!(db.sheet && db.sheet.url && db.sheet.token);
 const ready = () => sheetOn() && !!cfg();
-const sd = () => (cfg() && cfg().cycle.startDay) || 1;
+const usedLocal = (kind, id) => db.items.some(i => kind === 'wallets' ? (i.from === id || i.to === id) : kind === 'categories' ? i.cat === id : i.goal === id);
+function merged(kind){
+  const list = ((cfg() && cfg()[kind]) || []).map(x => ({...x}));
+  Object.values(db.q[kind]).forEach(q => {
+    let x = list.find(b => b.id === q.id);
+    if(!x){ x = {id:q.id, balance:0, cur:0, prev:0, used:false, isNew:true, opening:0}; list.push(x); }
+    x.queued = true; x.error = q.error;
+    if(q.delete){
+      if(x.used || usedLocal(kind, q.id)) x.status = kind === 'goals' ? 'closed' : 'hidden'; else x.gone = true;
+      return;
+    }
+    if(kind === 'wallets') x.balance += (q.opening || 0) - (x.opening || 0);     // a new opening balance moves the total with it
+    FIELDS[kind].forEach(f => x[f] = q[f]);
+  });
+  return list.filter(x => !x.gone).sort((a,b) => (a.order - b.order) || String(a.name).localeCompare(String(b.name)));
+}
+const wallets = () => merged('wallets'), cats = () => merged('categories'), goals = () => merged('goals');
+const activeW = () => wallets().filter(w => w.status !== 'hidden');
+const activeG = () => goals().filter(g => g.status !== 'closed');
+const settings = () => Object.assign({cycle_start_day:1, goal_wallet:'', transfer_fee_category:''}, cfg() ? cfg().settings : {}, db.q.settings);
+const wOf = id => wallets().find(w => w.id === id);
+const gOf = id => goals().find(g => g.id === id);
+const cOf = id => cats().find(c => c.id === id);
+const wName = id => (wOf(id) || {}).name || id || '';
+const gName = id => (gOf(id) || {}).name || id || '';
+const mains = (all) => cats().filter(c => !c.parent && (all || c.status !== 'hidden'));
+const subsOf = (id, all) => cats().filter(c => c.parent === id && (all || c.status !== 'hidden'));
+const mainOf = id => { const c = cOf(id); return c && c.parent ? c.parent : id; };
+const catLabel = id => { const c = cOf(id); if(!c) return ''; const p = c.parent ? cOf(c.parent) : null; return p ? `${p.name} › ${c.name}` : c.name; };
+/* what can be picked for an expense: sub-categories, and main categories that have none */
+const leafCats = () => mains().flatMap(m => { const s = subsOf(m.id); return s.length ? s : [m]; });
+
+/* ---------- cycles: start day 1 = calendar month; otherwise named after the month the cycle ends in ---------- */
+const sd = () => Math.min(28, Math.max(1, Number(settings().cycle_start_day) || 1));
 function cycleKeyOf(ts){
-  const d = parseTs(ts); let y = d.getFullYear(), m = d.getMonth() + 1 + (d.getDate() >= sd() ? 1 : 0);
+  const d = parseTs(ts); let y = d.getFullYear(), m = d.getMonth() + 1 + (sd() > 1 && d.getDate() >= sd() ? 1 : 0);
   if(m > 12){ m -= 12; y++; }
   return y*100 + m;
 }
-const accList = () => cfg() ? cfg().accounts : [];
-const accName = id => (accList().find(a => a.id === id) || {}).name || id || '';
-/* Goals as the sheet has them, with the changes still waiting in goalQ laid over the top */
-function goals(){
-  const list = ((cfg() && cfg().funds) || []).map(f => ({...f}));
-  Object.values(db.goalQ || {}).forEach(q => {
-    const f = list.find(x => x.id === q.id);
-    if(f) Object.assign(f, {name:q.name, target:q.target, due:q.due, status:q.status, queued:true});
-    else list.push({id:q.id, name:q.name, target:q.target, due:q.due, status:q.status, balance:0, queued:true, isNew:true});
-  });
-  return list;
+const shiftKey = (k, n) => { let y = Math.floor(k/100), m = k%100 + n; while(m > 12){ m -= 12; y++; } while(m < 1){ m += 12; y--; } return y*100 + m; };
+const curKey = () => cycleKeyOf(toLocalInput(new Date()));
+function cycleRange(k){            // [first day, the day after the last]
+  const y = Math.floor(k/100), m = k%100, s = sd();
+  return s > 1 ? [new Date(y, m-2, s), new Date(y, m-1, s)] : [new Date(y, m-1, 1), new Date(y, m, 1)];
 }
-const activeGoals = () => goals().filter(g => g.status !== 'closed');
-const fundName = id => goals().find(f => f.id === id)?.name || id || '';
-const lineOf = id => ((cfg() && cfg().lines) || []).find(l => l.id === id);
-const pending = () => db.items.filter(i => i.sync !== 'ok');
-const goalPending = () => Object.values(db.goalQ || {});
-const queueSize = () => pending().length + (db.sheet ? db.sheet.deletes.length : 0) + goalPending().length;
-const snapOf = i => ({type:i.type, lineId:i.lineId, amount:i.amount, ts:i.ts, from:i.from, to:i.to, fromFund:i.fromFund, toFund:i.toFund, eventId:i.eventId});
+const cycleTitle = k => { const [a,b] = cycleRange(k), e = new Date(b - dayMs);
+  return `${a.getDate()} ${TH_MON[a.getMonth()]} – ${e.getDate()} ${TH_MON[e.getMonth()]} ${e.getFullYear()}`; };
+/* the sheet sends totals for its current and previous cycle; anything else starts at 0 */
+const slotOf = k => !cfg() ? '' : k === cfg().cycle.key ? 'cur' : cfg().prevCycle && k === cfg().prevCycle.key ? 'prev' : '';
 
-/* What the queued changes will do once the sheet has them: new/edited versions count,
-   the version the sheet already holds is taken back out */
+/* ---------- what the waiting changes will do once the sheet has them ---------- */
+const pending = () => db.items.filter(i => i.sync !== 'ok');
 function effect(t, sign, a){
   if(!t) return;
-  if(t.type === 'expense' && t.lineId && cfg()){
-    const k = cycleKeyOf(t.ts);
-    if(k === cfg().cycle.key) a.line[t.lineId] = (a.line[t.lineId] || 0) + sign*t.amount;
-    else if(cfg().prevCycle && k === cfg().prevCycle.key) a.prev[t.lineId] = (a.prev[t.lineId] || 0) + sign*t.amount;
+  const amt = t.amount, fee = t.fee || 0, k = cycleKeyOf(t.ts);
+  const W = (id, v) => { if(!id) return; const w = wOf(id); if(w && w.openDate && t.ts.slice(0,10) < w.openDate) return; a.w[id] = (a.w[id] || 0) + sign*v; };
+  const G = (id, v) => { if(id) a.g[id] = (a.g[id] || 0) + sign*v; };
+  const C = (id, v) => { if(!id || !v) return; const m = a.c[k] = a.c[k] || {}; m[id] = (m[id] || 0) + sign*v; };
+  const T = (name, v) => { const m = a[name]; m[k] = (m[k] || 0) + sign*v; };
+  switch(t.type){
+    case 'expense': W(t.from, -amt); C(t.cat, amt); break;
+    case 'income': W(t.to, amt); T('inc', amt); break;
+    case 'transfer': W(t.from, -(amt + fee)); W(t.to, amt); C(settings().transfer_fee_category, fee); break;
+    case 'goal_pay': W(t.from, -amt); G(t.goal, -amt); T('gp', amt); break;
+    case 'goal_in': G(t.goal, amt); break;
+    case 'goal_out': G(t.goal, -amt); break;
+    case 'adjust': W(t.from, -amt); W(t.to, amt); break;
   }
-  if(t.from && t.type !== 'income') a.acc[t.from] = (a.acc[t.from] || 0) - sign*t.amount;
-  if(t.to) a.acc[t.to] = (a.acc[t.to] || 0) + sign*t.amount;
-  if(t.fromFund) a.fund[t.fromFund] = (a.fund[t.fromFund] || 0) - sign*t.amount;
-  if(t.toFund) a.fund[t.toFund] = (a.fund[t.toFund] || 0) + sign*t.amount;
 }
 function localDelta(extra){
-  const a = {line:{}, prev:{}, acc:{}, fund:{}};
+  const a = {w:{}, g:{}, c:{}, inc:{}, gp:{}};
   pending().forEach(i => { effect(i, 1, a); effect(i.synced, -1, a); });
   (db.sheet ? db.sheet.deletes : []).forEach(d => effect(d.synced, -1, a));
   if(extra) [].concat(extra).forEach(x => effect(x, 1, a));
   return a;
 }
-/* A fee is its own row, paired with the entry it belongs to (feeOf / feeId), so every sheet
-   formula keeps summing correctly. A payment from a goal takes its fee from the same goal;
-   any other fee goes to the category "ค่าธรรมเนียม" from the account the money left. */
-const feeLine = () => ((cfg() && cfg().lines) || []).find(l => l.item === 'ค่าธรรมเนียม');
-const canFee = t => t === 'one_time' || ((t === 'expense' || t === 'transfer' || t === 'income') && !!feeLine());
-function feeFor(main, amount, parentId){
-  const base = {type:'expense', lineId: feeLine() ? feeLine().id : '', amount, ts:main.ts, note:'ของ ' + main.category,
-    from:'', to:'', fromFund:'', toFund:'', eventId:'', category:'ค่าธรรมเนียม', feeOf:parentId};
-  if(main.type === 'one_time') return {...base, type:'one_time', lineId:'', from:main.from, fromFund:main.fromFund, category:'ค่าธรรมเนียม · ' + main.category};
-  if(main.type === 'income') return {...base, from:main.to};
-  return {...base, from:main.from};       // expense: same account · transfer: the source account
+const wBal = (w, D) => w.balance + (D.w[w.id] || 0);
+const gBal = (g, D) => g.balance + (D.g[g.id] || 0);
+const catSpend = (c, k, D) => { const s = slotOf(k); return (s ? c[s] || 0 : 0) + ((D.c[k] || {})[c.id] || 0); };
+const mainSpend = (m, k, D) => catSpend(m, k, D) + subsOf(m.id, true).reduce((x,c) => x + catSpend(c, k, D), 0);
+const totalSpend = (k, D) => mains(true).reduce((x,m) => x + mainSpend(m, k, D), 0);
+const incomeOf = (k, D) => { const s = slotOf(k); return (s && cfg().income ? cfg().income[s] : 0) + (D.inc[k] || 0); };
+const goalPayOf = (k, D) => { const s = slotOf(k); return (s && cfg().goalPay ? cfg().goalPay[s] : 0) + (D.gp[k] || 0); };
+/* money in the goal wallet that no goal has claimed; below 0 the goals promise more than is there */
+function freeMoney(D){
+  const w = wOf(settings().goal_wallet); if(!w) return null;
+  return {w, bal: wBal(w, D), inGoals: activeG().reduce((x,g) => x + gBal(g, D), 0), get free(){ return this.bal - this.inGoals; }};
 }
-const feeWhere = main => main.type === 'one_time' ? `จ่ายจากกระปุก${fundName(main.fromFund) || 'เดียวกัน'}เดียวกัน`
-  : `ลงหมวด ค่าธรรมเนียม · จาก${accName(main.type === 'income' ? main.to : main.from) || 'บัญชีที่เลือก'}`;
-const lineUsed = (l, D) => l.spent + (D.line[l.id] || 0);
-const linePrev = (l, D) => (l.prev || 0) + (D.prev[l.id] || 0);
-const accBal = (a, D) => a.balance + (D.acc[a.id] || 0);
-const fundBal = (f, D) => f.balance + (D.fund[f.id] || 0);
-function lineGroups(){
-  const g = {};
-  ((cfg() && cfg().lines) || []).forEach(l => (g[l.category] = g[l.category] || []).push(l));
-  return g;
-}
-/* progress toward a goal the user set; reaching it is good news, never a warning */
 const meter = (have, target) => { const p = target ? have/target : 0;
   return `<div class="meter${p >= 1 ? ' full' : ''}"><i style="width:${Math.min(100, Math.max(0, p*100)).toFixed(1)}%"></i></div>`; };
-/* this cycle against the last one, in plain words with no judgement */
 const vsPrev = (now, prev) => !prev && !now ? '' : !prev ? 'รอบก่อนไม่มี' : now === prev ? 'เท่ากับรอบก่อน'
   : (now > prev ? 'มากกว่ารอบก่อน ' : 'น้อยกว่ารอบก่อน ') + yen(Math.abs(now - prev));
+function itemTitle(it){
+  switch(it.type){
+    case 'expense': return catLabel(it.cat) || it.label || 'รายจ่าย';
+    case 'income': return `รับเงิน → ${wName(it.to)}`;
+    case 'transfer': return `ย้ายเงิน ${wName(it.from)} → ${wName(it.to)}`;
+    case 'goal_pay': return it.note || `จ่ายจากกระปุก${gName(it.goal)}`;
+    case 'goal_in': return `ใส่กระปุก${gName(it.goal)}`;
+    case 'goal_out': return `ถอนจากกระปุก${gName(it.goal)}`;
+    case 'adjust': return `ปรับยอด ${wName(it.from || it.to)} (${it.to ? '+' : '−'}${yen(it.amount)})`;
+  }
+  return it.label || '';
+}
 
 /* ================= Tabs ================= */
 let curView = 'input';
@@ -618,13 +677,15 @@ function show(v){
   renderAll(); window.scrollTo(0,0);
 }
 $$('nav.tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
-$$('.goSet').forEach(b => b.onclick = () => show('set'));
+document.addEventListener('click', e => { if(e.target.closest('.goSet')) show('set'); });
+const setupDone = () => activeW().length > 0 && leafCats().length > 0;
 function renderAll(){
   const r = ready();
   $$('.need').forEach(n => n.hidden = r);
-  $('#fIn').hidden = !r;
+  $('#inSetup').hidden = !r || setupDone();
+  $('#fIn').hidden = !r || !setupDone();
   renderSyncBar();
-  if(curView === 'input' && r) renderInput();
+  if(curView === 'input' && r && setupDone()) renderInput();
   if(curView === 'dash') renderDash();
   if(curView === 'goal') renderGoals();
   if(curView === 'hist') renderHist();
@@ -632,79 +693,86 @@ function renderAll(){
 }
 
 /* ================= Input ================= */
-const sx = {type:'expense', cat:'', line:null, from:'', to:'', fund:'', feeOn:false};
+const sx = {type:'expense', main:'', sub:'', from:'', to:'', goal:'', feeOn:false};
 let timeManual = false;
-const accOpts = (cur, D, skip, blank) => (blank ? `<option value="">${blank}</option>` : '') +
-  accList().filter(a => a.id !== skip).map(a => `<option value="${esc(a.id)}"${cur===a.id?' selected':''}>${esc(a.name)} · ${yen(accBal(a, D))}</option>`).join('');
-const fundOpts = (cur, D, blank) => `<option value="">${blank}</option>` +
-  goals().filter(f => f.status !== 'closed' || f.id === cur).map(f => `<option value="${esc(f.id)}"${cur===f.id?' selected':''}>${esc(f.name)} · ${yen(fundBal(f, D))}</option>`).join('');
+function wOpts(cur, D, skip, blank){
+  const list = activeW(); if(cur && !list.some(w => w.id === cur) && wOf(cur)) list.push(wOf(cur));   // an old entry may use a hidden wallet
+  return (blank ? `<option value="">${blank}</option>` : '') +
+    list.filter(w => w.id !== skip).map(w => `<option value="${esc(w.id)}"${cur===w.id?' selected':''}>${esc(w.name)} · ${yen(wBal(w, D))}</option>`).join('');
+}
+const gOpts = (cur, D, blank) => `<option value="">${blank}</option>` +
+  goals().filter(g => g.status !== 'closed' || g.id === cur).map(g => `<option value="${esc(g.id)}"${cur===g.id?' selected':''}>${esc(g.name)} · ${yen(gBal(g, D))}</option>`).join('');
+const pickedCat = () => { if(!sx.main) return ''; const s = subsOf(sx.main); return s.length ? (s.some(c => c.id === sx.sub) ? sx.sub : '') : sx.main; };
 
 function renderInput(){
-  const c = cfg(), t = sx.type, D = localDelta();
-  $('#inType').innerHTML = TYPES.map(([k,n]) => `<button type="button" role="tab" aria-selected="${t===k}" class="${t===k?'on':''}" data-t="${k}">${n}</button>`).join('');
-  const groups = lineGroups();
-  if(sx.cat && !groups[sx.cat]) sx.cat = '';
-  if(sx.line && !lineOf(sx.line)) sx.line = null;
-  $('#inCat').innerHTML = '<option value="">เลือกหมวด</option>' + Object.entries(groups).map(([g, ls]) =>
-    `<option value="${esc(g)}"${sx.cat===g?' selected':''}>${esc(g)}</option>`).join('');
-  const ls = sx.cat ? groups[sx.cat] : [];
-  $('#fSub').hidden = ls.length === 1;            // one item in the category: nothing to choose
-  $('#inLine').disabled = !sx.cat;
-  $('#inLine').innerHTML = `<option value="">${sx.cat ? 'เลือกรายการ' : 'เลือกหมวดก่อน'}</option>` +
-    ls.map(l => `<option value="${esc(l.id)}"${sx.line===l.id?' selected':''}>${esc(l.item)}</option>`).join('');
-  renderLineInfo(ls, D);
-  if(!accList().some(a => a.id === sx.from)) sx.from = '';
-  $('#inFrom').innerHTML = accOpts(sx.from, D, '', 'เลือกบัญชี');
-  $('#inTo').innerHTML = accOpts(sx.to, D, sx.from, 'เลือกบัญชี');
-  $('#inFund').innerHTML = fundOpts(sx.fund, D, t === 'one_time' ? 'เลือกกระปุก' : 'ไม่เข้ากระปุก');
-  const presets = t === 'transfer' ? TRANSFER_PRESETS.filter(p => accList().some(a => a.id === p.from) && accList().some(a => a.id === p.to)) : [];
-  $('#fPreset').innerHTML = presets.map(p => `<button type="button" class="chip${sx.from===p.from && sx.to===p.to ? ' on' : ''}" data-pf="${p.from}" data-pt="${p.to}">${esc(p.name)}</button>`).join('');
-  $('#fPreset').hidden = !presets.length;
-  $('#fLine').hidden = t !== 'expense';
+  const t = sx.type, D = localDelta();
+  $('#inType').innerHTML = IN_TYPES.map(([k,n]) => `<button type="button" role="tab" aria-selected="${t===k}" class="${t===k?'on':''}" data-t="${k}">${n}</button>`).join('');
+  if(sx.main && !mains().some(m => m.id === sx.main)){ sx.main = ''; sx.sub = ''; }
+  $('#inMain').innerHTML = '<option value="">เลือกหมวด</option>' + mains().map(m => `<option value="${esc(m.id)}"${sx.main===m.id?' selected':''}>${esc(m.name)}</option>`).join('');
+  const subs = sx.main ? subsOf(sx.main) : [];
+  $('#fSub').hidden = !subs.length;
+  $('#inSub').innerHTML = '<option value="">เลือกหมวดย่อย</option>' + subs.map(c => `<option value="${esc(c.id)}"${sx.sub===c.id?' selected':''}>${esc(c.name)}</option>`).join('');
+  renderCatInfo(D);
+  if(!activeW().some(w => w.id === sx.from)) sx.from = '';
+  if(!activeW().some(w => w.id === sx.to) || sx.to === sx.from) sx.to = '';
+  $('#inFrom').innerHTML = wOpts(sx.from, D, '', 'เลือกกระเป๋า');
+  $('#inTo').innerHTML = wOpts(sx.to, D, t === 'transfer' ? sx.from : '', 'เลือกกระเป๋า');
+  $('#inGoal').innerHTML = gOpts(sx.goal, D, 'เลือกกระปุก');
+  // recent transfer pairs, so a regular move is one tap
+  const pairs = [];
+  if(t === 'transfer') db.items.filter(i => i.type === 'transfer').sort((a,b) => b.createdAt.localeCompare(a.createdAt)).forEach(i => {
+    if(pairs.length < 4 && !pairs.some(p => p.from === i.from && p.to === i.to) && wOf(i.from) && wOf(i.to)) pairs.push({from:i.from, to:i.to});
+  });
+  $('#fRecent').innerHTML = pairs.map(p => `<button type="button" class="chip${sx.from===p.from && sx.to===p.to ? ' on' : ''}" data-pf="${esc(p.from)}" data-pt="${esc(p.to)}">${esc(wName(p.from))} → ${esc(wName(p.to))}</button>`).join('');
+  $('#fRecent').hidden = !pairs.length;
+  $('#fCat').hidden = t !== 'expense';
+  $('#fGoal').hidden = t !== 'goal_pay';
   $('#fFrom').hidden = t === 'income';
-  $('#fFromL').textContent = t === 'transfer' ? 'จากบัญชี' : 'จ่ายจาก';
+  $('#fFromL').textContent = t === 'transfer' ? 'จากกระเป๋า' : 'จ่ายจาก';
   $('#fTo').hidden = !(t === 'transfer' || t === 'income');
-  $('#fFund').hidden = !(t === 'one_time' || t === 'income');
-  $('#fFundL').textContent = t === 'one_time' ? 'จ่ายจากกระปุก' : 'เข้ากระปุก (ไม่บังคับ)';
-  $('#fFeeW').hidden = !canFee(t);
+  $('#fToL').textContent = t === 'income' ? 'รับเข้ากระเป๋า' : 'ไปกระเป๋า';
+  $('#fFeeW').hidden = !FEE_TYPES.includes(t);
   $('#feeBox').hidden = !sx.feeOn; $('#feeToggle').hidden = !!sx.feeOn;
-  $('#feeHint').textContent = feeWhere({type:t, from:sx.from, to:sx.to, fromFund:sx.fund});
+  $('#feeHint').textContent = feeHint(t, sx.from);
   refreshLiveTime();
 }
-/* What has gone to the chosen item (or the whole main category) this cycle, beside last cycle */
-function renderLineInfo(ls, D){
-  const box = $('#inLineInfo'), l = lineOf(sx.line), list = l ? [l] : ls;
-  box.hidden = !list.length; if(!list.length) return;
-  const used = list.reduce((x,i) => x + lineUsed(i, D), 0), prev = list.reduce((x,i) => x + linePrev(i, D), 0);
-  box.innerHTML = `<small>${l ? esc(l.item) + (l.account ? ' · ปกติจ่ายจาก ' + esc(accName(l.account)) : '') : 'ทั้งหมวด ' + esc(sx.cat) + ' (' + list.length + ' รายการ)'}</small>
-    <div class="big2">รอบนี้ใช้ไป ${yen(used)}</div>
-    <small>รอบก่อนทั้งรอบ ${yen(prev)}${vsPrev(used, prev) ? ' · ตอนนี้' + vsPrev(used, prev) : ''}</small>`;
+function feeHint(t, from){
+  if(t === 'transfer'){
+    const fc = settings().transfer_fee_category;
+    return fc && cOf(fc) ? `หักจาก${wName(from) || 'กระเป๋าต้นทาง'}เพิ่มจากยอดที่ย้าย · นับเป็นรายจ่ายหมวด ${catLabel(fc)}` : '⚠️ ยังไม่ได้ตั้งหมวดสำหรับค่าธรรมเนียมตอนย้ายเงิน (แท็บตั้งค่า)';
+  }
+  return 'รวมเข้ากับยอดหลัก นับในหมวดเดียวกัน';
 }
-function pickLine(id){
-  sx.line = id || null;
-  const l = lineOf(sx.line);
-  if(l && accList().some(a => a.id === l.account)) sx.from = l.account;     // the account the plan uses for this item
+/* what has gone to the chosen category this cycle, beside last cycle */
+function renderCatInfo(D){
+  const box = $('#inCatInfo'), id = pickedCat() || sx.main;
+  box.hidden = !id; if(!id) return;
+  const c = cOf(id), k = curKey(), pk = shiftKey(k, -1);
+  const fn = c.parent || !subsOf(c.id, true).length ? catSpend : mainSpend;
+  const used = fn(c, k, D), prev = fn(c, pk, D);
+  box.innerHTML = `<small>${esc(catLabel(id))}${!pickedCat() ? ' (ทั้งหมวด)' : ''}</small>
+    <div class="big2">รอบนี้ใช้ไป ${yen(used)}</div>
+    <small>รอบก่อนทั้งรอบ ${yen(prev)}${prev ? ' · ตอนนี้' + vsPrev(used, prev) : ''}</small>`;
+}
+function afterCatPick(){
+  const id = pickedCat();
+  if(id && db.last[id] && activeW().some(w => w.id === db.last[id])) sx.from = db.last[id];   // the wallet last used for this category
 }
 $('#inType').onclick = e => {
   const b = e.target.closest('[data-t]'); if(!b) return;
-  sx.type = b.dataset.t; Object.assign(sx, {cat:'', line:null, to:'', fund:'', event:''});
+  sx.type = b.dataset.t; sx.to = ''; sx.feeOn = false; $('#inFee').value = '';
+  if(sx.type === 'goal_pay' && !sx.from && wOf(settings().goal_wallet)) sx.from = settings().goal_wallet;
   $('#inErr').textContent = ''; renderInput();
 };
-$('#inCat').onchange = e => {
-  sx.cat = e.target.value; sx.line = null;
-  const ls = lineGroups()[sx.cat] || [];
-  if(ls.length === 1) pickLine(ls[0].id);             // a category with one item needs no second pick
-  renderInput();
-  if(sx.line) focusAmt();
-};
-$('#inLine').onchange = e => { pickLine(e.target.value); renderInput(); if(sx.line) focusAmt(); };
+$('#inMain').onchange = e => { sx.main = e.target.value; sx.sub = ''; afterCatPick(); renderInput(); if(pickedCat()) focusAmt(); };
+$('#inSub').onchange = e => { sx.sub = e.target.value; afterCatPick(); renderInput(); if(pickedCat()) focusAmt(); };
 const focusAmt = () => { const a = $('#inAmt'); a.scrollIntoView({block:'center', behavior:'smooth'}); a.focus({preventScroll:true}); };
-$('#inFrom').onchange = e => { sx.from = e.target.value; if(sx.to === sx.from) sx.to = ''; renderInput(); };
+$('#inFrom').onchange = e => { sx.from = e.target.value; renderInput(); };
 $('#inTo').onchange = e => { sx.to = e.target.value; renderInput(); };
-$('#inFund').onchange = e => { sx.fund = e.target.value; renderInput(); };
+$('#inGoal').onchange = e => { sx.goal = e.target.value; renderInput(); };
 $('#feeToggle').onclick = () => { sx.feeOn = true; renderInput(); $('#inFee').focus(); };
 $('#feeOff').onclick = () => { sx.feeOn = false; $('#inFee').value = ''; renderInput(); };
-$('#fPreset').onclick = e => { const b = e.target.closest('[data-pf]'); if(!b) return; sx.from = b.dataset.pf; sx.to = b.dataset.pt; renderInput(); };
+$('#fRecent').onclick = e => { const b = e.target.closest('[data-pf]'); if(!b) return; sx.from = b.dataset.pf; sx.to = b.dataset.pt; renderInput(); };
 
 function refreshLiveTime(){
   if(!timeManual) setDT($('#inTime'), toLocalInput(new Date()));
@@ -717,115 +785,105 @@ mountDT($('#edTime'));
 $('#inNow').onclick = () => { timeManual = false; refreshLiveTime(); };
 setInterval(() => { if(!timeManual && curView === 'input') refreshLiveTime(); }, 20000);
 
-/* Build the entry from the form; returns {item} or {err} */
+/* Build the entry from the form. For an expense or a goal payment the fee is added into
+   the amount (one total, one category); a transfer's fee is paid on top by the source. */
 function draftFromForm(){
-  const amount = parseAmt($('#inAmt').value), ts = getDT($('#inTime')), note = $('#inNote').value.trim(), t = sx.type;
-  if(!(amount > 0)) return {err:'กรุณากรอกจำนวนเงินเป็นตัวเลขจำนวนเต็มมากกว่า 0'};
+  const base = parseAmt($('#inAmt').value), ts = getDT($('#inTime')), note = $('#inNote').value.trim(), t = sx.type;
+  if(!(base > 0)) return {err:'กรุณากรอกจำนวนเงินเป็นตัวเลขจำนวนเต็มมากกว่า 0'};
   let fee = 0;
-  if(sx.feeOn && canFee(t) && $('#inFee').value.trim() !== ''){
+  if(sx.feeOn && FEE_TYPES.includes(t) && $('#inFee').value.trim() !== ''){
     fee = parseAmt($('#inFee').value);
     if(!(fee > 0)) return {err:'ค่าธรรมเนียมต้องเป็นตัวเลขจำนวนเต็มมากกว่า 0 (หรือกด เอาออก)'};
   }
   if(!ts || isNaN(parseTs(ts))) return {err:'วันและเวลาไม่ถูกต้อง'};
-  const it = {type:t, amount, ts, note, lineId:'', from:'', to:'', fromFund:'', toFund:'', eventId:'', category:''};
+  const it = {type:t, ts, note, cat:'', from:'', to:'', goal:'', fee, amount: t === 'transfer' ? base : base + fee};
   if(t === 'expense'){
-    const l = lineOf(sx.line); if(!l) return {err:'กรุณาเลือกหมวดหลักและรายการย่อย'};
-    if(!sx.from) return {err:'กรุณาเลือกบัญชีที่จ่าย'};
-    Object.assign(it, {lineId:l.id, from:sx.from, category:l.item});
+    const c = pickedCat(); if(!c) return {err: sx.main ? 'กรุณาเลือกหมวดย่อย' : 'กรุณาเลือกหมวด'};
+    if(!sx.from) return {err:'กรุณาเลือกกระเป๋าที่จ่าย'};
+    Object.assign(it, {cat:c, from:sx.from});
   } else if(t === 'transfer'){
-    if(!sx.from || !sx.to) return {err:'กรุณาเลือกบัญชีต้นทางและปลายทาง'};
-    Object.assign(it, {from:sx.from, to:sx.to, category:`ย้ายเงิน ${accName(sx.from)} → ${accName(sx.to)}`});
+    if(!sx.from || !sx.to) return {err:'กรุณาเลือกกระเป๋าต้นทางและปลายทาง'};
+    if(fee && !cOf(settings().transfer_fee_category)) return {err:'ตั้งหมวดสำหรับค่าธรรมเนียมตอนย้ายเงินในแท็บตั้งค่าก่อน'};
+    Object.assign(it, {from:sx.from, to:sx.to});
   } else if(t === 'income'){
-    if(!sx.to) return {err:'กรุณาเลือกบัญชีที่รับเงิน'};
-    Object.assign(it, {to:sx.to, toFund:sx.fund, category:'รับเงิน ' + accName(sx.to) + (sx.fund ? ' → กระปุก' + fundName(sx.fund) : '')});
+    if(!sx.to) return {err:'กรุณาเลือกกระเป๋าที่รับเงิน'};
+    Object.assign(it, {to:sx.to});
   } else {
-    if(!sx.from) return {err:'กรุณาเลือกบัญชีที่จ่าย'};
-    if(!sx.fund) return {err:'กรุณาเลือกกระปุกที่จ่าย'};
-    Object.assign(it, {from:sx.from, fromFund:sx.fund, category: note || 'จ่ายจากกระปุก ' + fundName(sx.fund)});
+    if(!sx.goal) return {err:'กรุณาเลือกกระปุก'};
+    if(!sx.from) return {err:'กรุณาเลือกกระเป๋าที่จ่าย'};
+    Object.assign(it, {goal:sx.goal, from:sx.from});
   }
-  return {item:it, fee};
+  return {item:it};
 }
-let draft = null;
+let draft = null, draftFromForm_ = false, afterSave = null;
 $('#fIn').onsubmit = e => {
   e.preventDefault();
   const r = draftFromForm();
   $('#inErr').textContent = r.err || ''; if(r.err) return;
-  showReview(r.item, true, r.fee);
+  showReview(r.item, true);
 };
-let draftFromForm_ = false;
-let draftFee = 0;
-function showReview(it, fromForm, fee){
-  draft = it; draftFromForm_ = !!fromForm; draftFee = fee || 0;
-  const feeIt = draftFee ? feeFor(it, draftFee, '') : null;
-  const D0 = localDelta(), D1 = localDelta(feeIt ? [it, feeIt] : it);
-  const rows = [['ประเภท', TYPE_NAME[it.type]], ['ยอด', `<span class="amtv">${yen(it.amount)}</span>`]];
-  if(it.type === 'expense'){ const l = lineOf(it.lineId); rows.push(['หมวด', `${esc(l.category)} · ${esc(l.item)}`]); }
-  else rows.push(['รายการ', esc(it.category)]);
-  if(it.from) rows.push([it.type === 'transfer' ? 'จากบัญชี' : it.type === 'adjust' ? 'ลดยอดบัญชี' : 'จ่ายจาก', esc(accName(it.from))]);
-  if(it.to) rows.push([it.type === 'adjust' ? 'เพิ่มยอดบัญชี' : 'ไปบัญชี', esc(accName(it.to))]);
-  if(it.fromFund) rows.push(['จากกระปุก', esc(fundName(it.fromFund))]);
-  if(it.toFund) rows.push(['เข้ากระปุก', esc(fundName(it.toFund))]);
-  if(feeIt){
-    rows.push(['ค่าธรรมเนียม', `${yen(draftFee)} · ${esc(feeWhere(it))}`]);
-    rows.push(['รวมจ่ายทั้งหมด', `<b>${yen(it.amount + draftFee)}</b>`]);
-  }
+function showReview(it, fromForm, onSaved){
+  draft = it; draftFromForm_ = !!fromForm; afterSave = onSaved || null;
+  const D0 = localDelta(), D1 = localDelta(it), fee = it.fee || 0;
+  const main = it.type === 'transfer' ? it.amount : it.amount - fee;
+  const rows = [['ประเภท', TYPE_NAME[it.type]], ['ยอด', `<span class="amtv">${yen(main)}</span>`]];
+  if(fee) rows.push(['ค่าธรรมเนียม', yen(fee)], [it.type === 'transfer' ? `หักจาก${esc(wName(it.from))}` : 'รวมทั้งหมด', `<b>${yen(main + fee)}</b>`]);
+  if(it.type === 'expense') rows.push(['หมวด', esc(catLabel(it.cat))]);
+  if(it.goal) rows.push(['กระปุก', esc(gName(it.goal))]);
+  if(it.from) rows.push([it.type === 'transfer' ? 'จากกระเป๋า' : it.type === 'adjust' ? 'ลดยอด' : 'จ่ายจาก', esc(wName(it.from))]);
+  if(it.to) rows.push([it.type === 'adjust' ? 'เพิ่มยอด' : it.type === 'income' ? 'รับเข้า' : 'ไปกระเป๋า', esc(wName(it.to))]);
   rows.push(['วันเวลา', esc(fmtDT(it.ts))]);
   if(it.note) rows.push(['หมายเหตุ', esc(it.note)]);
   $('#rvBody').innerHTML = rows.map(([k,v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-  // what changes after this entry
-  const imp = [];
-  if(it.type === 'expense'){
-    const l = lineOf(it.lineId);
-    if(cycleKeyOf(it.ts) === cfg().cycle.key) imp.push([`${l.item} รอบนี้`, `${yen(lineUsed(l, D0))} → ${yen(lineUsed(l, D1))}`]);
-    else imp.push([l.item, `นับในรอบ ${cycleKeyOf(it.ts)} (ไม่ใช่รอบปัจจุบัน)`]);
-  }
-  if(feeIt && feeIt.type === 'expense' && cycleKeyOf(it.ts) === cfg().cycle.key){
-    const fl = feeLine(); if(fl) imp.push([`${fl.item} รอบนี้`, `${yen(lineUsed(fl, D0))} → ${yen(lineUsed(fl, D1))}`]);
-  }
-  [it.from, it.to].filter(Boolean).forEach(id => {
-    const a = accList().find(x => x.id === id); if(a) imp.push([a.name, `${yen(accBal(a, D0))} → ${yen(accBal(a, D1))}`]);
-  });
-  [it.fromFund, it.toFund].filter(Boolean).forEach(id => {
-    const f = goals().find(x => x.id === id); if(f) imp.push([`กระปุก${f.name}`, `${yen(fundBal(f, D0))} → ${yen(fundBal(f, D1))}${f.target ? ' / ' + yen(f.target) : ''}`]);
-  });
-  $('#rvImpact').innerHTML = imp.map(([k,v]) => `<div><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('');
-  $('#rvImpact').hidden = !imp.length;
+  const imp = [], k = cycleKeyOf(it.ts);
+  const catLine = id => { const c = cOf(id); if(!c) return;
+    imp.push([`${catLabel(id)} ${k === curKey() ? 'รอบนี้' : 'รอบ ' + k}`, `${yen(catSpend(c, k, D0))} → ${yen(catSpend(c, k, D1))}`]); };
+  if(it.type === 'expense') catLine(it.cat);
+  if(it.type === 'transfer' && fee) catLine(settings().transfer_fee_category);
+  [it.from, it.to].filter(Boolean).forEach(id => { const w = wOf(id); if(w) imp.push([w.name, `${yen(wBal(w, D0))} → ${yen(wBal(w, D1))}`]); });
+  if(it.goal){ const g = gOf(it.goal); if(g) imp.push([`กระปุก${g.name}`, `${yen(gBal(g, D0))} → ${yen(gBal(g, D1))}${g.target ? ' / ' + yen(g.target) : ''}`]); }
+  const f0 = freeMoney(D0), f1 = freeMoney(D1);
+  let warn = '';
+  if(f1 && f1.free < 0 && (!f0 || f1.free < f0.free))
+    warn = `<div class="warnline">⚠️ หลังรายการนี้ ${esc(f1.w.name)} (${yen(f1.bal)}) จะมีน้อยกว่าเงินในกระปุกรวม (${yen(f1.inGoals)}) อยู่ ${yen(-f1.free)}</div>`;
+  $('#rvImpact').innerHTML = imp.map(([a,b]) => `<div><span>${esc(a)}</span><span>${esc(b)}</span></div>`).join('') + warn;
+  $('#rvImpact').hidden = !imp.length && !warn;
   openM('#mReview');
 }
 $('#rvBack').onclick = () => closeM('#mReview');
 $('#rvOk').onclick = () => {
   if(!draft) return;
-  const now = new Date().toISOString(), mainId = uid();
-  const main = {id:mainId, ...draft, sync:'pending', createdAt:now, updatedAt:now};
-  if(draftFee){ const f = {id:uid(), ...feeFor(draft, draftFee, mainId), sync:'pending', createdAt:now, updatedAt:now}; main.feeId = f.id; db.items.push(main, f); }
-  else db.items.push(main);
+  const now = new Date().toISOString();
+  const it = {id:uid(), ...draft, label:itemTitle(draft), sync:'pending', createdAt:now, updatedAt:now};
+  db.items.push(it);
+  if(it.type === 'expense' && it.cat) db.last[it.cat] = it.from;
   if(!persist()) return;
-  const saved = draft, savedFee = draftFee; draft = null; draftFee = 0; closeM('#mReview');
-  if(draftFromForm_){                     // a wallet check leaves the half-filled form alone
-    $('#inAmt').value = ''; $('#inNote').value = ''; $('#inFee').value = ''; sx.feeOn = false;
-    if(sx.type !== 'transfer') sx.fund = '';
-    if((lineGroups()[sx.cat] || []).length !== 1) sx.line = null;
-  }
+  const saved = draft; draft = null; closeM('#mReview');
+  if(draftFromForm_){ $('#inAmt').value = ''; $('#inNote').value = ''; $('#inFee').value = ''; sx.feeOn = false; }
+  if(afterSave){ afterSave(it); afterSave = null; }
   renderAll();
-  toast(`บันทึกในเครื่องแล้ว: ${saved.category} ${yen(saved.amount)}${savedFee ? ' + ค่าธรรมเนียม ' + yen(savedFee) : ''} · รอส่ง ${queueSize()} รายการ`);
+  toast(`บันทึกในเครื่องแล้ว: ${itemTitle(saved)} ${yen(saved.amount)} · รอส่ง ${queueSize()} รายการ`);
 };
 
 /* ================= Sheet sync (only when the user asks) ================= */
 const ERRORS = {unauthorized:'TOKEN ไม่ถูกต้อง', busy:'ชีตกำลังทำงานอยู่ ลองใหม่อีกครั้ง', bad_json:'ข้อมูลที่ส่งเสียหาย', server:'ชีตเกิดข้อผิดพลาด'};
-const REJECT = {bad_line:'หมวดไม่มีในชีต (แท็บ Categories)', bad_name:'ชื่อกระปุกไม่ถูกต้อง', bad_target:'เป้าหมายไม่ถูกต้อง', bad_due:'วันที่เป้าหมายไม่ถูกต้อง', bad_status:'สถานะกระปุกไม่ถูกต้อง', bad_from_account:'บัญชีที่จ่ายไม่มีในชีต', bad_to_account:'บัญชีที่รับไม่มีในชีต',
-  bad_account:'บัญชีไม่มีในชีต', same_account:'บัญชีต้นทางกับปลายทางเดียวกัน', bad_fund:'กระปุกไม่มีในชีต',
-  bad_amount:'ยอดเงินไม่ถูกต้อง', bad_adjust:'การปรับยอดต้องมีบัญชีเดียว (ชีตยังไม่ได้อัปเดต Apps Script?)', bad_ts:'วันเวลาไม่ถูกต้อง', bad_type:'ประเภทไม่ถูกต้อง', bad_id:'รหัสรายการไม่ถูกต้อง'};
+const REJECT = {bad_category:'หมวดไม่มีในชีต', bad_from:'กระเป๋าที่จ่ายไม่มีในชีต', bad_to:'กระเป๋าที่รับไม่มีในชีต', bad_wallet:'กระเป๋าไม่มีในชีต',
+  same_wallet:'กระเป๋าต้นทางกับปลายทางเดียวกัน', bad_goal:'กระปุกไม่มีในชีต', bad_fee:'ค่าธรรมเนียมไม่ถูกต้อง', no_fee_category:'ยังไม่ได้ตั้งหมวดค่าธรรมเนียมตอนย้ายเงิน',
+  bad_amount:'ยอดเงินไม่ถูกต้อง', bad_adjust:'การปรับยอดต้องมีกระเป๋าเดียว', bad_ts:'วันเวลาไม่ถูกต้อง', bad_type:'ประเภทไม่ถูกต้อง', bad_id:'รหัสไม่ถูกต้อง',
+  bad_name:'ชื่อไม่ถูกต้อง', bad_target:'เป้าหมายไม่ถูกต้อง', bad_date:'วันที่ไม่ถูกต้อง', bad_order:'ลำดับไม่ถูกต้อง', bad_status:'สถานะไม่ถูกต้อง',
+  bad_parent:'หมวดหลักไม่ถูกต้อง', bad_setting:'ค่าตั้งค่าไม่ถูกต้อง'};
+const qCount = () => KINDS.reduce((x,k) => x + Object.keys(db.q[k]).length, 0) + Object.keys(db.q.settings).length;
+const queueSize = () => pending().length + (db.sheet ? db.sheet.deletes.length : 0) + qCount();
 let busy = false;
-const toPayload = it => ({id:it.id, ts:it.ts, type:it.type, line_id:it.lineId || '', amount:it.amount,
-  from_account: it.type === 'income' ? '' : (it.from || ''), to_account:it.to || '', from_fund:it.fromFund || '',
-  to_fund:it.toFund || '', event_id:'', note:it.note || ''});
-const goalPayload = g => ({id:g.id, name:g.name, target:g.target, due:g.due || '', status:g.status});
-async function call(upserts, deletes, funds){
+const toPayload = it => ({id:it.id, ts:it.ts, type:it.type, category:it.cat || '', amount:it.amount, fee:it.fee || 0,
+  from:it.from || '', to:it.to || '', goal:it.goal || '', note:it.note || ''});
+const entPayload = (kind, q) => q.delete ? {id:q.id, delete:true} : Object.assign({id:q.id}, Object.fromEntries(FIELDS[kind].map(f => [f, q[f]])));
+async function call(body){
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 30000);
   try{
     const r = await fetch(db.sheet.url, {method:'POST', redirect:'follow', signal:ctl.signal,
       headers:{'Content-Type':'text/plain;charset=utf-8'},        // simple request: no CORS preflight
-      body: JSON.stringify({token:db.sheet.token, funds: funds || [], upserts, deletes})});
+      body: JSON.stringify(Object.assign({token:db.sheet.token}, body))});
     const res = await r.json();
     if(!res.ok) throw new Error(ERRORS[res.error] || res.error || 'ชีตไม่ตอบรับ');
     return res;
@@ -833,69 +891,77 @@ async function call(upserts, deletes, funds){
     throw new Error(e.name === 'AbortError' ? 'หมดเวลาเชื่อมต่อ' : e.message === 'Failed to fetch' ? (navigator.onLine ? 'เชื่อมต่อชีตไม่ได้' : 'ออฟไลน์') : e.message);
   }finally{ clearTimeout(tm); }
 }
-/* Read-only refresh: spending so far, balances and goals */
+/* Read-only refresh */
 async function pull(quiet){
   if(!sheetOn() || busy) return;
   busy = true; renderSyncBar();
-  try{ const res = await call([], [], []); db.sheet.config = res.config; db.sheet.lastSync = new Date().toISOString(); db.sheet.lastError = ''; }
+  try{ const res = await call({}); db.sheet.config = res.config; db.sheet.lastSync = new Date().toISOString(); db.sheet.lastError = ''; }
   catch(e){ db.sheet.lastError = e.message; if(!quiet) toast('⚠️ ' + e.message); }
   busy = false; persist(); renderAll();
 }
 async function push(){
   if(!sheetOn() || busy) return false;
-  const ups = pending(), dels = db.sheet.deletes.slice(), gq = goalPending();
+  const ups = pending(), dels = db.sheet.deletes.slice();
   const sentAt = Object.fromEntries(ups.map(i => [i.id, i.updatedAt]));
-  const goalAt = Object.fromEntries(gq.map(g => [g.id, g.updatedAt]));
+  const sentQ = {}; KINDS.forEach(k => sentQ[k] = Object.fromEntries(Object.values(db.q[k]).map(q => [q.id, q.updatedAt])));
+  const sentS = {...db.q.settings};
+  const body = {settings:sentS, upserts:ups.map(toPayload), deletes:dels.map(d => d.id)};
+  KINDS.forEach(k => body[k] = Object.values(db.q[k]).map(q => entPayload(k, q)));
   busy = true; renderSyncBar();
   try{
-    const res = await call(ups.map(toPayload), dels.map(d => d.id), gq.map(goalPayload));
+    const res = await call(body);
+    const saved = res.saved || {};
+    KINDS.forEach(k => (saved[k] || []).forEach(id => { const q = db.q[k][id]; if(q && q.updatedAt === sentQ[k][id]) delete db.q[k][id]; }));
+    (saved.settings || []).forEach(key => { if(db.q.settings[key] === sentS[key]) delete db.q.settings[key]; });
     const ok = new Set(res.upserted || []);
-    const gOk = new Set(res.funds || []);
-    gq.forEach(g => { const q = db.goalQ[g.id]; if(q && gOk.has(g.id) && q.updatedAt === goalAt[g.id]) delete db.goalQ[g.id]; });
-    ups.forEach(i => {
-      // an entry edited while this request was out stays pending for the next push
-      if(ok.has(i.id) && i.updatedAt === sentAt[i.id]){ i.sync = 'ok'; i.synced = snapOf(i); delete i.syncError; }
-    });
+    ups.forEach(i => { if(ok.has(i.id) && i.updatedAt === sentAt[i.id]){ i.sync = 'ok'; i.synced = snapOf(i); delete i.syncError; } });
     (res.rejected || []).forEach(x => {
-      if(x.kind === 'fund'){ const q = db.goalQ[x.id]; if(q) q.error = REJECT[x.error] || x.error; return; }
+      if(KINDS.includes(x.kind)){ const q = db.q[x.kind][x.id]; if(q) q.error = REJECT[x.error] || x.error; return; }
+      if(x.kind === 'settings') return;
       const it = db.items.find(i => i.id === x.id); if(it){ it.sync = 'error'; it.syncError = REJECT[x.error] || x.error; } });
     const delOk = new Set(res.deleted || []);
     db.sheet.deletes = db.sheet.deletes.filter(d => !delOk.has(d.id));
     db.sheet.config = res.config; db.sheet.lastSync = new Date().toISOString(); db.sheet.lastError = '';
     busy = false; persist(); renderAll();
-    return {sent: ok.size + gOk.size, deleted: delOk.size, rejected: (res.rejected || []).length};
+    const nSet = KINDS.reduce((x,k) => x + (saved[k] || []).length, 0) + (saved.settings || []).length;
+    return {sent: ok.size, setup: nSet, deleted: delOk.size, rejected: (res.rejected || []).length};
   }catch(e){
     db.sheet.lastError = e.message; busy = false; persist(); renderAll();
     return {error: e.message};
   }
 }
+const snapOf = i => ({type:i.type, cat:i.cat, amount:i.amount, fee:i.fee || 0, ts:i.ts, from:i.from, to:i.to, goal:i.goal});
 function renderSyncBar(){
   const b = $('#syncBar');
-  b.hidden = !sheetOn() || curView === 'set'; if(b.hidden) return;
+  b.hidden = !sheetOn() || curView === 'set' && !queueSize(); if(b.hidden) return;
   const n = queueSize(), t = db.sheet.lastSync ? new Date(db.sheet.lastSync) : null;
   b.className = 'sync' + (busy ? '' : n ? ' pend' : db.sheet.lastError ? ' warn' : '');
   b.textContent = busy ? '⏳ กำลังติดต่อชีต…'
     : n ? `⬆ รอส่ง ${n} รายการ · แตะเพื่อตรวจและส่งขึ้นชีต`
     : db.sheet.lastError ? `⚠️ ${db.sheet.lastError} · แตะเพื่อลองใหม่`
     : !cfg() ? 'แตะเพื่อโหลดข้อมูลจากชีต'
-    : `☁ ตรงกับชีต · อัปเดต ${pad(t.getHours())}:${pad(t.getMinutes())} · รอบ ${cfg().cycle.key} · แตะเพื่อรีเฟรช`;
+    : `☁ ตรงกับชีต · อัปเดต ${pad(t.getHours())}:${pad(t.getMinutes())} · รอบ ${curKey()} · แตะเพื่อรีเฟรช`;
 }
 $('#syncBar').onclick = () => queueSize() ? openPush() : pull();
 
+const KIND_NAME = {wallets:'กระเป๋า', categories:'หมวด', goals:'กระปุก'};
+const SET_NAME = {cycle_start_day:'วันเริ่มรอบ', goal_wallet:'กระเป๋าของกระปุก', transfer_fee_category:'หมวดค่าธรรมเนียมย้ายเงิน'};
 function openPush(){
-  const ups = pending(), dels = db.sheet.deletes, gq = goalPending();
-  if(!ups.length && !dels.length && !gq.length){ toast('ไม่มีรายการรอส่ง'); return; }
-  const spend = ups.filter(i => !isMove(i)).reduce((x,i) => x + i.amount, 0);
-  $('#puSum').innerHTML = `<small>ใหม่ ${ups.filter(i => !i.synced).length} · แก้ไข ${ups.filter(i => i.synced).length} · ลบ ${dels.length} รายการ${gq.length ? ' · กระปุก ' + gq.length : ''}</small>
+  const ups = pending(), dels = db.sheet.deletes;
+  if(!queueSize()){ toast('ไม่มีรายการรอส่ง'); return; }
+  const spend = ups.reduce((x,i) => x + spendOf(i), 0);
+  $('#puSum').innerHTML = `<small>ใหม่ ${ups.filter(i => !i.synced).length} · แก้ไข ${ups.filter(i => i.synced).length} · ลบ ${dels.length} รายการ${qCount() ? ' · ตั้งค่า ' + qCount() : ''}</small>
     <div class="big">${yen(spend)}</div><small>ยอดรายจ่ายในรายการที่จะส่ง (ไม่รวมย้ายเงิน/รับเงิน/กระปุก)</small>`;
-  const gRows = gq.map(g => `<li><div class="it"><div class="t">🐷 ${esc(g.name)}<span class="tag ${g.error ? 'e' : 'p'}">${g.error ? 'ชีตไม่รับ: ' + esc(g.error) : g.isNew ? 'กระปุกใหม่' : g.status === 'closed' ? 'ปิดกระปุก' : 'แก้ไขกระปุก'}</span></div>
-      <div class="m">เป้าหมาย ${yen(g.target)}${g.due ? ' · ภายใน ' + esc(fmtDate(g.due)) : ''}</div></div><div class="a nx"></div></li>`);
-  const rows = gRows.concat(ups.slice().sort((a,b) => a.ts.localeCompare(b.ts)).map(i => `<li><div class="it">
-      <div class="t">${esc(i.category)}<span class="tag ${i.sync === 'error' ? 'e' : 'p'}">${i.sync === 'error' ? 'ชีตไม่รับ: ' + esc(i.syncError) : i.synced ? 'แก้ไข' : 'ใหม่'}</span></div>
-      <div class="m">${esc(fmtDT(i.ts))} · ${esc(TYPE_NAME[i.type])}${i.from ? ' · ' + esc(accName(i.from)) : ''}${i.to ? ' → ' + esc(accName(i.to)) : ''}</div></div>
-      <div class="a${isMove(i) ? ' nx' : ''}">${yen(i.amount)}</div></li>`)
-    .concat(dels.map(d => `<li><div class="it"><div class="t">${esc(d.category || d.id)}<span class="tag e">ลบออกจากชีต</span></div>
-      <div class="m">${d.ts ? esc(fmtDT(d.ts)) : ''}</div></div><div class="a nx">${d.amount ? yen(d.amount) : ''}</div></li>`)));
+  const setRows = [];
+  KINDS.forEach(k => Object.values(db.q[k]).forEach(q => setRows.push(`<li><div class="it"><div class="t">${KIND_NAME[k]}: ${esc(q.delete ? (merged(k).find(x => x.id === q.id) || cfg()[k].find(x => x.id === q.id) || {}).name || q.id : q.name)}
+      <span class="tag ${q.error ? 'e' : 'p'}">${q.error ? 'ชีตไม่รับ: ' + esc(q.error) : q.delete ? 'ลบ/ซ่อน' : q.isNew ? 'ใหม่' : 'แก้ไข'}</span></div></div><div class="a nx"></div></li>`)));
+  Object.keys(db.q.settings).forEach(key => setRows.push(`<li><div class="it"><div class="t">ตั้งค่า: ${SET_NAME[key] || key}<span class="tag p">แก้ไข</span></div></div><div class="a nx"></div></li>`));
+  const rows = setRows.concat(ups.slice().sort((a,b) => a.ts.localeCompare(b.ts)).map(i => `<li><div class="it">
+      <div class="t">${esc(itemTitle(i))}<span class="tag ${i.sync === 'error' ? 'e' : 'p'}">${i.sync === 'error' ? 'ชีตไม่รับ: ' + esc(i.syncError) : i.synced ? 'แก้ไข' : 'ใหม่'}</span></div>
+      <div class="m">${esc(fmtDT(i.ts))} · ${esc(TYPE_NAME[i.type])}${i.fee ? ' · ค่าธรรมเนียม ' + yen(i.fee) : ''}</div></div>
+      <div class="a${isMove(i) ? ' nx' : ''}">${yen(i.amount)}</div></li>`))
+    .concat(dels.map(d => `<li><div class="it"><div class="t">${esc(d.label || d.id)}<span class="tag e">ลบออกจากชีต</span></div>
+      <div class="m">${d.ts ? esc(fmtDT(d.ts)) : ''}</div></div><div class="a nx">${d.amount ? yen(d.amount) : ''}</div></li>`));
   $('#puList').innerHTML = rows.join('');
   $('#puErr').textContent = '';
   $('#puOk').disabled = false; $('#puOk').textContent = 'ยืนยันส่งขึ้นชีต';
@@ -908,9 +974,8 @@ $('#puOk').onclick = async () => {
   if(!r){ $('#puOk').disabled = false; $('#puOk').textContent = 'ยืนยันส่งขึ้นชีต'; return; }
   if(r.error){ $('#puErr').textContent = '⚠️ ' + r.error + ' · รายการยังอยู่ในเครื่อง ลองใหม่ได้'; $('#puOk').disabled = false; $('#puOk').textContent = 'ลองส่งอีกครั้ง'; return; }
   closeM('#mPush');
-  toast(r.rejected ? `ส่งแล้ว ${r.sent} · ชีตไม่รับ ${r.rejected} รายการ (ดูในประวัติ)` : `ส่งขึ้นชีตแล้ว ${r.sent} รายการ${r.deleted ? ' · ลบ ' + r.deleted : ''}`);
+  toast(r.rejected ? `ส่งแล้ว ${r.sent + r.setup} · ชีตไม่รับ ${r.rejected} รายการ` : `ส่งขึ้นชีตแล้ว ${r.sent} รายการ${r.setup ? ' · ตั้งค่า ' + r.setup : ''}${r.deleted ? ' · ลบ ' + r.deleted : ''}`);
 };
-
 window.addEventListener('online', () => { if(sheetOn()) pull(true); });
 document.addEventListener('visibilitychange', () => {
   if(document.hidden || !sheetOn()) return;
@@ -919,32 +984,32 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /* ================= Wallet check =================
-   Compare the balance the app has worked out with the one the wallet app shows, then record
-   the difference: a forgotten expense (counted under a category the user picks each time),
-   a forgotten top-up (a transfer), or a plain adjustment such as points back (not spending). */
-const rc = {acc:'', kind:'', cat:'', line:''};
+   Compare the balance the app has worked out with the real one, then record the difference:
+   a forgotten expense (under a category picked each time), a forgotten top-up (a transfer),
+   or a plain adjustment such as points back (not spending). */
+const rc = {acc:'', kind:'', main:'', sub:''};
 function openRecon(acc){
   if(!ready()) return;
-  Object.assign(rc, {acc: acc || rc.acc || (accList()[0] || {}).id || '', kind:'', cat:'', line:''});
+  Object.assign(rc, {acc: acc || rc.acc || (activeW()[0] || {}).id || '', kind:'', main:'', sub:''});
   $('#rcReal').value = ''; $('#rcNote').value = ''; $('#rcErr').textContent = '';
   renderRecon(); openM('#mRecon'); $('#rcReal').focus();
 }
 function reconDiff(){
-  const a = accList().find(x => x.id === rc.acc), real = $('#rcReal').value === '' ? NaN : parseAmt($('#rcReal').value);
-  if(!a || isNaN(real)) return null;
-  const calc = accBal(a, localDelta());
-  return {a, calc, real, d: real - calc};
+  const w = wOf(rc.acc), real = $('#rcReal').value === '' ? NaN : parseSigned($('#rcReal').value);
+  if(!w || isNaN(real)) return null;
+  const calc = wBal(w, localDelta());
+  return {w, calc, real, d: real - calc};
 }
+const rcCat = () => { if(!rc.main) return ''; const s = subsOf(rc.main); return s.length ? (s.some(c => c.id === rc.sub) ? rc.sub : '') : rc.main; };
 function renderRecon(){
   const D = localDelta(), r = reconDiff();
-  $('#rcAcc').innerHTML = accOpts(rc.acc, D, '', '');
+  $('#rcAcc').innerHTML = wOpts(rc.acc, D, '', '');
   const box = $('#rcDiff');
-  box.hidden = !r;
-  $('#rcWhy').hidden = !r || r.d === 0;
+  box.hidden = !r; $('#rcWhy').hidden = !r || r.d === 0;
   if(!r){ $('#rcOk').disabled = true; return; }
   box.innerHTML = r.d === 0
-    ? `<small>${esc(r.a.name)}</small><div class="big2">ยอดตรงกันแล้ว ✓</div><small>แอปคำนวณได้ ${yen(r.calc)} เท่ากับยอดจริง</small>`
-    : `<small>แอปคำนวณได้ ${yen(r.calc)} · ยอดจริง ${yen(r.real)}</small><div class="big2 ${r.d < 0 ? 'over-t' : ''}">ต่างกัน ${r.d > 0 ? '+' : '−'}${yen(Math.abs(r.d))}</div>
+    ? `<small>${esc(r.w.name)}</small><div class="big2">ยอดตรงกันแล้ว ✓</div><small>แอปคำนวณได้ ${yen(r.calc)} เท่ากับยอดจริง</small>`
+    : `<small>แอปคำนวณได้ ${yen(r.calc)} · ยอดจริง ${yen(r.real)}</small><div class="big2">ต่างกัน ${r.d > 0 ? '+' : '−'}${yen(Math.abs(r.d))}</div>
        <small>${r.d < 0 ? 'ยอดจริงน้อยกว่าที่บันทึก' : 'ยอดจริงมากกว่าที่บันทึก'}</small>`;
   $('#rcOk').disabled = false; $('#rcOk').textContent = r.d === 0 ? 'ปิด' : 'ตรวจรายการก่อนบันทึก';
   if(r.d === 0) return;
@@ -952,43 +1017,37 @@ function renderRecon(){
                         : [['topup','ลืมบันทึกการเติมเงิน'], ['adjust','ปรับยอดเฉยๆ เช่น แต้มคืน']];
   if(!kinds.some(k => k[0] === rc.kind)) rc.kind = '';
   $('#rcKind').innerHTML = kinds.map(([k,n]) => `<button type="button" class="chip${rc.kind===k?' on':''}" data-k="${k}">${n}</button>`).join('');
-  $('#rcLineW').hidden = rc.kind !== 'forgot';
+  $('#rcCatW').hidden = rc.kind !== 'forgot';
   $('#rcSrcW').hidden = rc.kind !== 'topup';
-  if(rc.kind === 'forgot'){                     // no default item: picked by hand every time
-    const groups = lineGroups(); if(rc.cat && !groups[rc.cat]) rc.cat = '';
-    $('#rcCat').innerHTML = '<option value="">เลือกหมวด</option>' + Object.keys(groups).map(g => `<option value="${esc(g)}"${rc.cat===g?' selected':''}>${esc(g)}</option>`).join('');
-    const ls = rc.cat ? groups[rc.cat] : [];
-    $('#rcLine').disabled = !rc.cat;
-    $('#rcLine').innerHTML = `<option value="">${rc.cat ? 'เลือกรายการ' : 'เลือกหมวดก่อน'}</option>` +
-      ls.map(l => `<option value="${esc(l.id)}"${rc.line===l.id?' selected':''}>${esc(l.item)}</option>`).join('');
+  if(rc.kind === 'forgot'){
+    $('#rcMain').innerHTML = '<option value="">เลือกหมวด</option>' + mains().map(m => `<option value="${esc(m.id)}"${rc.main===m.id?' selected':''}>${esc(m.name)}</option>`).join('');
+    const subs = rc.main ? subsOf(rc.main) : [];
+    $('#rcSubW').hidden = !subs.length;
+    $('#rcSub').innerHTML = '<option value="">เลือกหมวดย่อย</option>' + subs.map(c => `<option value="${esc(c.id)}"${rc.sub===c.id?' selected':''}>${esc(c.name)}</option>`).join('');
   }
-  if(rc.kind === 'topup') $('#rcSrc').innerHTML = accOpts($('#rcSrc').value, D, rc.acc, 'เลือกบัญชีต้นทาง');
+  if(rc.kind === 'topup') $('#rcSrc').innerHTML = wOpts($('#rcSrc').value, D, rc.acc, 'เลือกกระเป๋าต้นทาง');
 }
 $('#openRecon').onclick = () => openRecon();
-$('#dash').addEventListener('click', e => { const b = e.target.closest('[data-recon]'); if(b) openRecon(b.dataset.recon); });
 $('#rcAcc').onchange = e => { rc.acc = e.target.value; rc.kind = ''; renderRecon(); };
 $('#rcReal').oninput = () => renderRecon();
 $('#rcKind').onclick = e => { const b = e.target.closest('[data-k]'); if(!b) return; rc.kind = b.dataset.k; $('#rcErr').textContent = ''; renderRecon(); };
-$('#rcCat').onchange = e => { rc.cat = e.target.value; rc.line = ''; renderRecon(); };
-$('#rcLine').onchange = e => { rc.line = e.target.value; };
+$('#rcMain').onchange = e => { rc.main = e.target.value; rc.sub = ''; renderRecon(); };
+$('#rcSub').onchange = e => { rc.sub = e.target.value; };
 $('#rcCancel').onclick = () => closeM('#mRecon');
 $('#rcOk').onclick = () => {
   const r = reconDiff(); if(!r) return;
-  if(r.d === 0){ closeM('#mRecon'); toast(`${r.a.name} ยอดตรงกันแล้ว`); return; }
+  if(r.d === 0){ closeM('#mRecon'); toast(`${r.w.name} ยอดตรงกันแล้ว`); return; }
   const amount = Math.abs(r.d), ts = toLocalInput(new Date()), note = $('#rcNote').value.trim() || 'จากการตรวจยอด';
-  const base = {amount, ts, note, lineId:'', from:'', to:'', fromFund:'', toFund:'', eventId:''};
+  const base = {amount, fee:0, ts, note, cat:'', from:'', to:'', goal:''};
   let it = null;
   if(rc.kind === 'forgot'){
-    const l = lineOf($('#rcLine').value);
-    if(!l){ $('#rcErr').textContent = 'กรุณาเลือกหมวดหลักและรายการย่อยของรายจ่ายที่ลืมบันทึก'; return; }
-    it = {...base, type:'expense', lineId:l.id, from:r.a.id, category:l.item};
+    const c = rcCat(); if(!c){ $('#rcErr').textContent = 'กรุณาเลือกหมวดของรายจ่ายที่ลืมบันทึก'; return; }
+    it = {...base, type:'expense', cat:c, from:r.w.id};
   } else if(rc.kind === 'topup'){
-    const src = $('#rcSrc').value;
-    if(!src){ $('#rcErr').textContent = 'กรุณาเลือกบัญชีที่ใช้เติมเงิน'; return; }
-    it = {...base, type:'transfer', from:src, to:r.a.id, category:`ย้ายเงิน ${accName(src)} → ${r.a.name}`};
+    const src = $('#rcSrc').value; if(!src){ $('#rcErr').textContent = 'กรุณาเลือกกระเป๋าที่ใช้เติมเงิน'; return; }
+    it = {...base, type:'transfer', from:src, to:r.w.id};
   } else if(rc.kind === 'adjust'){
-    it = {...base, type:'adjust', from: r.d < 0 ? r.a.id : '', to: r.d > 0 ? r.a.id : '',
-      category:`ปรับยอด ${r.a.name} (${r.d > 0 ? '+' : '−'}${yen(amount)})`};
+    it = {...base, type:'adjust', from: r.d < 0 ? r.w.id : '', to: r.d > 0 ? r.w.id : ''};
   } else { $('#rcErr').textContent = 'กรุณาเลือกว่าส่วนต่างนี้คืออะไร'; return; }
   closeM('#mRecon'); showReview(it);
 };
@@ -996,78 +1055,74 @@ $('#rcOk').onclick = () => {
 /* ================= Dashboard =================
    Where the money went this cycle, beside the last cycle. No limits and no warnings:
    the only targets in the app are the goals the user sets for themselves. */
+let pieMode = 'cur', piePick = '';
 function renderDash(){
-  const el = $('#dash'), c = cfg();
+  const el = $('#dash');
   if(!ready()){ el.innerHTML = ''; return; }
-  const D = localDelta();
-  const today = new Date(); today.setHours(0,0,0,0);
-  const start = dOnly(c.cycle.start), end = dOnly(c.cycle.end);
-  const totalDays = Math.round((end - start)/dayMs) + 1, daysLeft = Math.max(0, Math.round((end - today)/dayMs) + 1);
-  const passed = Math.max(1, totalDays - daysLeft);
-  const used = c.lines.reduce((x,l) => x + lineUsed(l, D), 0), prev = c.lines.reduce((x,l) => x + linePrev(l, D), 0);
-  const cats = Object.entries(lineGroups()).map(([g, ls]) => ({g, ls, u: ls.reduce((x,l) => x + lineUsed(l, D), 0), p: ls.reduce((x,l) => x + linePrev(l, D), 0)}));
-  const gs = activeGoals(), inGoals = gs.reduce((x,f) => x + fundBal(f, D), 0);
+  const D = localDelta(), k = curKey(), pk = shiftKey(k, -1);
+  const [a, b] = cycleRange(k), today = new Date(); today.setHours(0,0,0,0);
+  const totalDays = Math.round((b - a)/dayMs), passed = Math.min(totalDays, Math.max(1, Math.round((today - a)/dayMs) + 1));
+  const used = totalSpend(k, D), prev = totalSpend(pk, D), inc = incomeOf(k, D), gp = goalPayOf(k, D);
+  const fm = freeMoney(D), gs = activeG();
   const t = db.sheet.lastSync ? new Date(db.sheet.lastSync) : null, n = queueSize();
   el.innerHTML = `
   <div class="card">
-    <small>รอบ ${c.cycle.key} · ${start.getDate()} ${TH_MON[start.getMonth()]} – ${end.getDate()} ${TH_MON[end.getMonth()]} · เหลือ ${daysLeft} วัน</small>
+    <small>รอบ ${k} · ${cycleTitle(k)} · เหลือ ${totalDays - passed} วัน</small>
     <div class="big" style="font-size:34px">${yen(used)}</div>
     <small>ใช้ไปรอบนี้ · รอบก่อนทั้งรอบ ${yen(prev)}</small>
     <div class="kpis">
-      <div class="kpi"><small>ผ่านไปแล้ว</small><b>${totalDays - daysLeft} / ${totalDays} วัน</b></div>
-      <div class="kpi"><small>เฉลี่ยต่อวัน (รอบนี้)</small><b>${yen(Math.round(used / passed))}</b></div>
-      <div class="kpi"><small>รายรับต่อเดือน</small><b>${yen(c.income)}</b></div>
-      <div class="kpi"><small>รายรับ − ใช้ไปรอบนี้</small><b>${yen(c.income - used)}</b></div>
+      <div class="kpi"><small>ผ่านไปแล้ว</small><b>${passed} / ${totalDays} วัน</b></div>
+      <div class="kpi"><small>เฉลี่ยต่อวัน</small><b>${yen(Math.round(used / passed))}</b></div>
+      <div class="kpi"><small>รับเงินรอบนี้</small><b>${yen(inc)}</b></div>
+      <div class="kpi"><small>รับเงิน − ใช้ไป</small><b>${yen(inc - used)}</b></div>
     </div>
+    ${gp ? `<p class="hint">จ่ายจากกระปุกรอบนี้ ${yen(gp)} (แยกจากรายจ่ายตามหมวด)</p>` : ''}
   </div>
-  ${pieCard(cats)}
-  <div class="card"><h2>ยอดเงินแต่ละบัญชี</h2>
-    ${c.accounts.map(a => { const b = accBal(a, D); return `<div class="drow"><div class="top"><span>${esc(a.name)} <button class="lnk" data-recon="${esc(a.id)}">ตรวจยอด</button></span><span class="${b < 0 ? 'over-t' : ''}">${yen(b)}</span></div></div>`; }).join('')}
+  ${pieCard(D, k, pk)}
+  <div class="card"><h2>ยอดเงินแต่ละกระเป๋า</h2>
+    ${activeW().map(w => { const v = wBal(w, D); return `<div class="drow"><div class="top"><span>${esc(w.name)} <button class="lnk" data-recon="${esc(w.id)}">ตรวจยอด</button></span><span class="${v < 0 ? 'over-t' : ''}">${yen(v)}</span></div></div>`; }).join('') || '<p class="hint">ยังไม่มีกระเป๋า</p>'}
   </div>
   <div class="card"><h2>🐷 กระปุก</h2>
-    ${gs.length ? gs.map(f => { const b = fundBal(f, D);
-      return `<div class="drow"><div class="top"><span>${esc(f.name)}</span><span>${yen(b)}${f.target ? ' / ' + yen(f.target) : ''}</span></div>${f.target ? meter(b, f.target) : ''}</div>`; }).join('') : '<p class="hint">ยังไม่มีกระปุก</p>'}
+    ${fm && fm.free < 0 ? `<div class="warnbox">⚠️ เงินในกระปุกรวม ${yen(fm.inGoals)} มากกว่ายอด ${esc(fm.w.name)} ${yen(fm.bal)} อยู่ <b>${yen(-fm.free)}</b></div>` : ''}
+    ${gs.length ? gs.map(g => { const v = gBal(g, D);
+      return `<div class="drow"><div class="top"><span>${esc(g.name)}</span><span>${yen(v)}${g.target ? ' / ' + yen(g.target) : ''}</span></div>${g.target ? meter(v, g.target) : ''}</div>`; }).join('') : '<p class="hint">ยังไม่มีกระปุก</p>'}
     <div class="bar2"><button class="btn sm" data-go="goal">ดูและจัดการกระปุก</button></div>
-    <p class="hint">รวมในกระปุก ${yen(inGoals)}</p>
   </div>
   <p class="hint">ข้อมูลจากชีต ณ ${t ? esc(fmtDT(toLocalInput(t))) : '-'}${n ? ` รวมรายการที่รอส่ง ${n} รายการ` : ''}</p>`;
 }
 
 /* ---------- donut of a cycle by main category ----------
    Colour follows the category (its order in Categories), never its size, so a slice keeps
-   its colour from one cycle to the next; "อื่นๆ" is the neutral Other. The centre shows the
-   total, or the tapped slice; every slice also has a labelled legend row with its share. */
-let pieMode = 'cur', piePick = '';
+   its colour from one cycle to the next; "อื่นๆ" is the neutral Other. */
 function arc(cx, cy, R, r, a0, a1){
   const p = (rad, a) => `${(cx + rad*Math.cos(a)).toFixed(2)} ${(cy + rad*Math.sin(a)).toFixed(2)}`;
   const big = a1 - a0 > Math.PI ? 1 : 0;
   return `M ${p(R,a0)} A ${R} ${R} 0 ${big} 1 ${p(R,a1)} L ${p(r,a1)} A ${r} ${r} 0 ${big} 0 ${p(r,a0)} Z`;
 }
-function pieCard(cats){
-  const D = localDelta();
-  const byOrder = Object.keys(lineGroups()).filter(g => g !== 'อื่นๆ');
-  const slot = g => g === 'อื่นๆ' || byOrder.indexOf(g) > 7 ? 'var(--sOther)' : 'var(--s' + (byOrder.indexOf(g) + 1) + ')';
-  const cur = pieMode === 'cur', key = cur ? cfg().cycle.key : (cfg().prevCycle || {}).key;
-  const val = c => Math.max(0, cur ? c.u : c.p), other = c => Math.max(0, cur ? c.p : c.u);
-  const rows = cats.map(c => ({...c, v: val(c), o: other(c)})).sort((a,b) => b.v - a.v);
+function pieCard(D, k, pk){
+  const ms = mains(true), order = ms.filter(m => m.name !== 'อื่นๆ').map(m => m.id);
+  const slot = id => { const i = order.indexOf(id); return i < 0 || i > 7 ? 'var(--sOther)' : 'var(--s' + (i + 1) + ')'; };
+  const cur = pieMode === 'cur', key = cur ? k : pk;
+  const rows = ms.map(m => ({m, u: mainSpend(m, k, D), p: mainSpend(m, pk, D)})).map(x => ({...x, v: Math.max(0, cur ? x.u : x.p)}))
+    .filter(x => x.m.status !== 'hidden' || x.u || x.p).sort((a,b) => b.v - a.v);
   const total = rows.reduce((x,r) => x + r.v, 0);
-  if(piePick && !rows.some(r => r.g === piePick && r.v > 0)) piePick = '';
+  if(piePick && !rows.some(r => r.m.id === piePick && r.v > 0)) piePick = '';
   const C = 110, R = 104, r = 66, live = rows.filter(x => x.v > 0);
   let a0 = -Math.PI/2, paths = '';
   live.forEach(x => {
     const frac = x.v / total;
     const a1 = live.length === 1 ? a0 + 2*Math.PI - 1e-4 : a0 + frac*2*Math.PI;
-    const mid = (a0 + a1) / 2, on = piePick === x.g;
+    const mid = (a0 + a1) / 2, on = piePick === x.m.id;
     const shift = on ? `transform:translate(${(6*Math.cos(mid)).toFixed(2)}px,${(6*Math.sin(mid)).toFixed(2)}px)` : '';
-    paths += `<path class="${on ? 'on' : ''}" data-pie="${esc(x.g)}" d="${arc(C, C, R, r, a0, a1)}" style="fill:${slot(x.g)};${shift}"><title>${esc(x.g)} ${yen(x.v)} (${(frac*100).toFixed(1)}%)</title></path>`;
+    paths += `<path class="${on ? 'on' : ''}" data-pie="${esc(x.m.id)}" d="${arc(C, C, R, r, a0, a1)}" style="fill:${slot(x.m.id)};${shift}"><title>${esc(x.m.name)} ${yen(x.v)} (${(frac*100).toFixed(1)}%)</title></path>`;
     a0 = a1;
   });
-  const pick = rows.find(x => x.g === piePick);
-  const cmpTxt = x => cur ? vsPrev(x.u, x.p) : 'รอบนี้ใช้ไปแล้ว ' + yen(x.u);
+  const pick = rows.find(x => x.m.id === piePick);
+  const cmp = x => cur ? vsPrev(x.u, x.p) : 'รอบนี้ใช้ไปแล้ว ' + yen(x.u);
   const mid = pick
-    ? `<small><span class="chip-dot" style="background:${slot(pick.g)}"></span>${esc(pick.g)}</small><b>${yen(pick.v)}</b>
-       <span class="pct">${(pick.v/total*100).toFixed(1)}%</span><small>${esc(cmpTxt(pick))}</small>`
-    : `<small>${cur ? 'ใช้ไปรอบนี้' : 'ใช้ไปรอบก่อน'}</small><b>${yen(total)}</b><small>${live.length} หมวด · รอบ ${key || '-'}</small>`;
+    ? `<small><span class="chip-dot" style="background:${slot(pick.m.id)}"></span>${esc(pick.m.name)}</small><b>${yen(pick.v)}</b>
+       <span class="pct">${(pick.v/total*100).toFixed(1)}%</span><small>${esc(cmp(pick))}</small>`
+    : `<small>${cur ? 'ใช้ไปรอบนี้' : 'ใช้ไปรอบก่อน'}</small><b>${yen(total)}</b><small>${live.length} หมวด · รอบ ${key}</small>`;
   return `<div class="card pie-root dn-card">
     <div class="dn-head"><h2>เงินไปทางไหน</h2>
       <div class="dn-seg" role="tablist" aria-label="รอบที่แสดง">
@@ -1080,22 +1135,22 @@ function pieCard(cats){
       <div class="dn-mid">${total ? mid : `<small>ยังไม่มีรายจ่าย<br>ใน${cur ? 'รอบนี้' : 'รอบก่อน'}</small>`}</div>
     </div>
     <p class="dn-tip">${total ? (pick ? 'แตะอีกครั้งเพื่อดูภาพรวม' : 'แตะชิ้นหรือชื่อหมวดเพื่อดูรายละเอียด') : ''}</p>
-    <div class="lg-list">${rows.map(x => { const share = total ? x.v/total*100 : 0;
-      return `<details class="lg-row${piePick === x.g ? ' on' : ''}" data-lg="${esc(x.g)}"${piePick === x.g ? ' open' : ''}><summary>
-        <span class="sw" style="background:${slot(x.g)}"></span>
-        <span class="nm">${esc(x.g)}<small>${esc(cmpTxt(x)) || '&nbsp;'}</small></span>
+    <div class="lg-list">${rows.map(x => { const share = total ? x.v/total*100 : 0, subs = subsOf(x.m.id, true);
+      return `<details class="lg-row${piePick === x.m.id ? ' on' : ''}" data-lg="${esc(x.m.id)}"${piePick === x.m.id ? ' open' : ''}><summary>
+        <span class="sw" style="background:${slot(x.m.id)}"></span>
+        <span class="nm">${esc(x.m.name)}<small>${esc(cmp(x)) || '&nbsp;'}</small></span>
         <span class="v">${yen(x.v)}<small>${share.toFixed(1)}%</small></span>
-        <span class="share"><i style="width:${share.toFixed(1)}%;background:${slot(x.g)}"></i></span></summary>
-        <div class="inner">${x.ls.map(l => { const u = lineUsed(l, D), p = linePrev(l, D);
-          return `<div class="drow"><div class="top"><span>${esc(l.item)}</span><span>${yen(cur ? u : p)}</span></div><div class="sub">${esc(cur ? (vsPrev(u, p) || 'ยังไม่มีรายจ่าย') : 'รอบนี้ ' + yen(u))}</div></div>`; }).join('')}</div>
+        <span class="share"><i style="width:${share.toFixed(1)}%;background:${slot(x.m.id)}"></i></span></summary>
+        <div class="inner">${(subs.length ? subs : [x.m]).map(c => { const u = catSpend(c, k, D), p = catSpend(c, pk, D);
+          return u || p || c.status !== 'hidden' ? `<div class="drow"><div class="top"><span>${esc(c.name)}</span><span>${yen(cur ? u : p)}</span></div><div class="sub">${esc(cur ? (vsPrev(u, p) || 'ยังไม่มีรายจ่าย') : 'รอบนี้ ' + yen(u))}</div></div>` : ''; }).join('')}</div>
       </details>`; }).join('')}</div>
   </div>`;
 }
 $('#dash').addEventListener('click', e => {
+  const rcB = e.target.closest('[data-recon]'); if(rcB) return openRecon(rcB.dataset.recon);
+  const go = e.target.closest('[data-go]'); if(go) return show(go.dataset.go);
   const m = e.target.closest('[data-pm]');
   if(m){ pieMode = m.dataset.pm; piePick = ''; renderDash(); return; }
-  const go = e.target.closest('[data-go]');
-  if(go){ show(go.dataset.go); return; }
   const p = e.target.closest('[data-pie]');
   if(p){ piePick = piePick === p.dataset.pie ? '' : p.dataset.pie; renderDash(); return; }
   const s = e.target.closest('.lg-row summary');
@@ -1103,120 +1158,138 @@ $('#dash').addEventListener('click', e => {
 });
 
 /* ================= Goals (กระปุก) =================
-   A goal is a share of the money in ゆうちょ set aside for something the user chose, with a
-   target they set and, if they like, a date. Money goes in and out as fund_move entries, and a
-   purchase paid from a goal is a "จ่ายจากกระปุก" entry, so the sheet keeps the full history. */
-const yuchoAcc = () => accList().find(a => a.id === 'yucho');
-const newGoalId = () => 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-function goalPlan(f, b){
-  if(f.target && b >= f.target) return {done:true, txt:'ครบเป้าแล้ว 🎉'};
-  if(!f.due) return {txt: f.target ? `ขาดอีก <b>${yen(f.target - b)}</b>` : 'ไม่ได้ตั้งเป้า'};
+   A goal is a share of the money in the goal wallet (ゆうちょ) set aside for something the user
+   chose. Money goes in and out as goal_in / goal_out entries; a purchase paid from a goal is a
+   goal_pay entry, so the sheet keeps the full history. */
+function goalPlan(g, b){
+  if(g.target && b >= g.target) return 'ครบเป้าแล้ว 🎉';
+  if(!g.due) return g.target ? `ขาดอีก <b>${yen(g.target - b)}</b>` : 'ไม่ได้ตั้งเป้า';
   const today = new Date(); today.setHours(0,0,0,0);
-  const days = Math.round((dOnly(f.due) - today)/dayMs), need = Math.max(0, f.target - b);
-  if(days < 0) return {txt:`เลยวันที่ตั้งไว้ (${esc(fmtDate(f.due))}) · ขาดอีก <b>${yen(need)}</b>`};
+  const days = Math.round((dOnly(g.due) - today)/dayMs), need = Math.max(0, g.target - b);
+  if(days < 0) return `เลยวันที่ตั้งไว้ (${esc(fmtDate(g.due))}) · ขาดอีก <b>${yen(need)}</b>`;
   const months = Math.max(1, Math.ceil(days / 30.44));            // average month length
-  return {txt:`ภายใน ${esc(fmtDate(f.due))} · อีก ${months} เดือน · ใส่เดือนละ <b>${yen(Math.ceil(need / months))}</b> ก็ทัน`};
+  return `ภายใน ${esc(fmtDate(g.due))} · อีก ${months} เดือน · ใส่เดือนละ <b>${yen(Math.ceil(need / months))}</b> ก็ทัน`;
 }
 function renderGoals(){
   const el = $('#goals');
   if(!ready()){ el.innerHTML = ''; return; }
   const D = localDelta(), all = goals(), act = all.filter(g => g.status !== 'closed'), closed = all.filter(g => g.status === 'closed');
-  const inGoals = act.reduce((x,f) => x + fundBal(f, D), 0), y = yuchoAcc();
-  const card = f => { const b = fundBal(f, D), pl = goalPlan(f, b), pct = f.target ? Math.min(100, b/f.target*100) : 0;
-    return `<div class="goal${f.status === 'closed' ? ' closed' : ''}">
-      <div class="gh"><b>${esc(f.name)}</b>${f.queued ? '<span class="tag p">รอส่ง</span>' : ''}</div>
-      <div class="gv">${yen(b)}${f.target ? ` <small>/ ${yen(f.target)} · ${pct.toFixed(0)}%</small>` : ''}</div>
-      ${f.target ? meter(b, f.target) : ''}
-      <div class="gs">${pl.txt}</div>
-      ${f.status === 'closed' ? `<div class="bar2"><button class="btn sm" data-ged="${esc(f.id)}">เปิดใช้อีกครั้ง / แก้ไข</button></div>`
-        : `<div class="ga"><button class="btn" data-gin="${esc(f.id)}">＋ ใส่เงิน</button><button class="btn" data-gout="${esc(f.id)}"${b > 0 ? '' : ' disabled'}>− ถอน</button>
-          <button class="btn" data-gpay="${esc(f.id)}"${b > 0 ? '' : ' disabled'}>ใช้จ่าย</button><button class="btn" data-ged="${esc(f.id)}" aria-label="แก้ไขกระปุก">✏️</button></div>`}
+  const fm = freeMoney(D), inGoals = act.reduce((x,g) => x + gBal(g, D), 0);
+  const card = g => { const b = gBal(g, D), pct = g.target ? Math.min(100, b/g.target*100) : 0;
+    return `<div class="goal${g.status === 'closed' ? ' closed' : ''}">
+      <div class="gh"><b>${esc(g.name)}</b>${g.queued ? `<span class="tag ${g.error ? 'e' : 'p'}">${g.error ? 'ชีตไม่รับ' : 'รอส่ง'}</span>` : ''}</div>
+      <div class="gv">${yen(b)}${g.target ? ` <small>/ ${yen(g.target)} · ${pct.toFixed(0)}%</small>` : ''}</div>
+      ${g.target ? meter(b, g.target) : ''}
+      <div class="gs">${goalPlan(g, b)}</div>
+      ${g.status === 'closed' ? `<div class="bar2"><button class="btn sm" data-ged="${esc(g.id)}">เปิดใช้อีกครั้ง / แก้ไข</button></div>`
+        : `<div class="ga"><button class="btn" data-gin="${esc(g.id)}">＋ ใส่เงิน</button><button class="btn" data-gout="${esc(g.id)}"${b > 0 ? '' : ' disabled'}>− ถอน</button>
+          <button class="btn" data-gpay="${esc(g.id)}"${b > 0 ? '' : ' disabled'}>ใช้จ่าย</button><button class="btn" data-ged="${esc(g.id)}" aria-label="แก้ไขกระปุก">✏️</button></div>`}
     </div>`; };
   el.innerHTML = `
     <div class="card"><small>เงินในกระปุกทั้งหมด</small><div class="big">${yen(inGoals)}</div>
-      ${y ? `<small>${esc(y.name)} ${yen(accBal(y, D))} · ยังไม่ได้แบ่งเข้ากระปุก ${yen(accBal(y, D) - inGoals)}</small>` : ''}</div>
+      ${fm ? `<small>${esc(fm.w.name)} ${yen(fm.bal)} · ยังไม่ได้แบ่งเข้ากระปุก ${yen(fm.free)}</small>` : '<small>⚠️ ยังไม่ได้เลือกกระเป๋าที่เก็บเงินของกระปุก (แท็บตั้งค่า)</small>'}</div>
+    ${fm && fm.free < 0 ? `<div class="warnbox">⚠️ เงินในกระปุกรวม <b>${yen(fm.inGoals)}</b> มากกว่ายอด ${esc(fm.w.name)} <b>${yen(fm.bal)}</b> อยู่ <b>${yen(-fm.free)}</b><br>
+      แก้ได้ 2 ทาง: ถอนเงินออกจากกระปุกให้เท่ากับส่วนต่าง หรือถ้ายอดในแอปผิด ให้ <button class="lnk" data-recon="${esc(fm.w.id)}">ตรวจยอด ${esc(fm.w.name)}</button></div>` : ''}
     <button class="btn pri" id="goNew" style="width:100%">＋ สร้างกระปุกใหม่</button>
     ${act.length ? act.map(card).join('') : '<p class="empty">ยังไม่มีกระปุก · สร้างอันแรกได้เลย</p>'}
     ${closed.length ? `<details class="dl" style="margin-top:14px"><summary><div class="drow"><div class="top"><span>กระปุกที่ปิดแล้ว (${closed.length})</span><span></span></div></div></summary>${closed.map(card).join('')}</details>` : ''}
-    <p class="hint">เงินในกระปุกยังอยู่ใน ゆうちょ ตามจริง กระปุกแค่แบ่งไว้ว่าเงินก้อนไหนมีไว้ทำอะไร · ใส่เงิน ถอน หรือใช้จ่าย จะส่งขึ้นชีตพร้อมรายการอื่นเมื่อกดส่ง</p>`;
+    <p class="hint">เงินในกระปุกยังอยู่ใน ${fm ? esc(fm.w.name) : 'กระเป๋าที่เลือก'} ตามจริง กระปุกแค่แบ่งไว้ว่าเงินก้อนไหนมีไว้ทำอะไร</p>`;
 }
 let goalEdit = null;
-function openGoal(id){
-  const f = id ? goals().find(g => g.id === id) : null; goalEdit = f ? f.id : null;
-  $('#goT').textContent = f ? 'แก้ไขกระปุก' : 'สร้างกระปุก';
-  $('#goOk').textContent = f ? (f.status === 'closed' ? 'บันทึกและเปิดใช้อีกครั้ง' : 'บันทึกการแก้ไข') : 'สร้างกระปุก';
-  $('#goName').value = f ? f.name : ''; $('#goTarget').value = f && f.target ? f.target : ''; $('#goDue').value = f ? f.due || '' : '';
-  $('#goStart').value = ''; $('#goStartW').hidden = !!f; $('#goCloseW').hidden = !f || f.status === 'closed'; $('#goErr').textContent = '';
-  openM('#mGoal'); if(!f) $('#goName').focus();
+const nextOrder = list => list.reduce((x,i) => Math.max(x, i.order || 0), 0) + 1;
+function queue(kind, obj){
+  const old = db.q[kind][obj.id];
+  db.q[kind][obj.id] = Object.assign({}, obj, {isNew: old ? !!old.isNew : !!obj.isNew, updatedAt:new Date().toISOString()});
+  delete db.q[kind][obj.id].error;
 }
-function queueGoal(g){
-  const old = db.goalQ[g.id];
-  db.goalQ[g.id] = {id:g.id, name:g.name, target:g.target, due:g.due || '', status:g.status, isNew: old ? !!old.isNew : !!g.isNew, updatedAt:new Date().toISOString()};
+function queueDelete(kind, x){
+  const q = db.q[kind][x.id];
+  if(q && q.isNew && !usedLocal(kind, x.id)){ delete db.q[kind][x.id]; return; }      // never reached the sheet
+  db.q[kind][x.id] = {id:x.id, delete:true, isNew:false, updatedAt:new Date().toISOString()};
+}
+function openGoal(id){
+  const g = id ? gOf(id) : null; goalEdit = g ? g.id : null;
+  $('#goT').textContent = g ? 'แก้ไขกระปุก' : 'สร้างกระปุก';
+  $('#goOk').textContent = g ? (g.status === 'closed' ? 'บันทึกและเปิดใช้อีกครั้ง' : 'บันทึกการแก้ไข') : 'สร้างกระปุก';
+  $('#goName').value = g ? g.name : ''; $('#goTarget').value = g && g.target ? g.target : ''; $('#goDue').value = g ? g.due || '' : '';
+  $('#goStart').value = ''; $('#goStartW').hidden = !!g; $('#goEndW').hidden = !g; $('#goErr').textContent = '';
+  const fm = freeMoney(localDelta());
+  $('#goStartHint').textContent = fm ? `ตอนนี้ ${fm.w.name} มีเงินที่ยังไม่ได้แบ่ง ${yen(fm.free)}` : '';
+  if(g){ const used = g.used || usedLocal('goals', g.id); $('#goDel').hidden = used; $('#goClose').hidden = used ? g.status === 'closed' : true; }
+  openM('#mGoal'); if(!g) $('#goName').focus();
 }
 $('#goDueClear').onclick = () => { $('#goDue').value = ''; };
 $('#goCancel').onclick = () => closeM('#mGoal');
-$('#fGoal').onsubmit = e => {
+$('#fGoalEd').onsubmit = e => {
   e.preventDefault();
   const name = $('#goName').value.trim(), tRaw = $('#goTarget').value.trim(), target = tRaw === '' ? 0 : parseAmt(tRaw), due = $('#goDue').value;
   const sRaw = $('#goStart').value.trim(), start = sRaw === '' ? 0 : parseAmt(sRaw);
-  const err = !name ? 'กรุณาตั้งชื่อกระปุก' : name.length > 60 ? 'ชื่อยาวเกิน 60 ตัวอักษร'
-    : !(target >= 0) ? 'เป้าหมายต้องเป็นตัวเลขจำนวนเต็ม' : !(start >= 0) ? 'เงินเริ่มต้นต้องเป็นตัวเลขจำนวนเต็ม'
+  const err = !name ? 'กรุณาตั้งชื่อกระปุก' : !(target >= 0) ? 'เป้าหมายต้องเป็นตัวเลขจำนวนเต็ม' : !(start >= 0) ? 'เงินเริ่มต้นต้องเป็นตัวเลขจำนวนเต็ม'
     : goals().some(g => g.name === name && g.id !== goalEdit && g.status !== 'closed') ? 'มีกระปุกชื่อนี้อยู่แล้ว' : '';
   $('#goErr').textContent = err; if(err) return;
-  const now = new Date().toISOString();
   if(goalEdit){
-    queueGoal({id:goalEdit, name, target, due, status:'active'});
+    const g = gOf(goalEdit);
+    queue('goals', {id:goalEdit, name, target, due, status:'active', order:g.order || nextOrder(goals())});
     persist(); closeM('#mGoal'); renderAll(); toast(`แก้ไขกระปุก${name}แล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง`); return;
   }
-  const id = newGoalId();
-  queueGoal({id, name, target, due, status:'active', isNew:true});
-  if(start > 0) db.items.push({id:uid(), type:'fund_move', amount:start, ts:toLocalInput(new Date()), note:'เงินเริ่มต้น', lineId:'', from:'', to:'',
-    fromFund:'', toFund:id, eventId:'', category:'ใส่เงินเข้ากระปุก ' + name, sync:'pending', createdAt:now, updatedAt:now});
+  const id = rid('g');
+  queue('goals', {id, name, target, due, status:'active', order:nextOrder(goals()), isNew:true});
+  const now = new Date().toISOString();
+  if(start > 0){ const it = {id:uid(), type:'goal_in', amount:start, fee:0, ts:toLocalInput(new Date()), note:'เงินเริ่มต้น', cat:'', from:'', to:'', goal:id, sync:'pending', createdAt:now, updatedAt:now};
+    it.label = itemTitle(it); db.items.push(it); }
   persist(); closeM('#mGoal'); renderAll();
   toast(`สร้างกระปุก${name}แล้ว${start ? ' · ใส่ ' + yen(start) : ''} · รอส่ง ${queueSize()} รายการ`);
 };
 $('#goClose').onclick = () => {
-  const f = goals().find(g => g.id === goalEdit); if(!f) return;
-  const b = fundBal(f, localDelta());
-  ask(`ปิดกระปุก${f.name}?`, b > 0 ? `เงิน ${yen(b)} ในกระปุกจะกลับไปเป็นเงินที่ยังไม่ได้แบ่ง (ยังอยู่ใน ゆうちょ เหมือนเดิม) · ประวัติยังอยู่ในชีต` : 'ประวัติยังอยู่ในชีต เปิดใช้อีกครั้งได้ทีหลัง', () => {
+  const g = gOf(goalEdit); if(!g) return;
+  const b = gBal(g, localDelta());
+  ask(`ปิดกระปุก${g.name}?`, b > 0 ? `เงิน ${yen(b)} ในกระปุกจะกลับไปเป็นเงินที่ยังไม่ได้แบ่ง (เงินจริงยังอยู่ที่เดิม) · ประวัติยังอยู่ในชีต` : 'ประวัติยังอยู่ในชีต เปิดใช้อีกครั้งได้ทีหลัง', () => {
     const now = new Date().toISOString();
-    if(b > 0) db.items.push({id:uid(), type:'fund_move', amount:b, ts:toLocalInput(new Date()), note:'ปิดกระปุก', lineId:'', from:'', to:'',
-      fromFund:f.id, toFund:'', eventId:'', category:'ถอนจากกระปุก ' + f.name, sync:'pending', createdAt:now, updatedAt:now});
-    queueGoal({...f, status:'closed'});
-    persist(); closeM('#mGoal'); renderAll(); toast(`ปิดกระปุก${f.name}แล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง`);
+    if(b > 0){ const it = {id:uid(), type:'goal_out', amount:b, fee:0, ts:toLocalInput(new Date()), note:'ปิดกระปุก', cat:'', from:'', to:'', goal:g.id, sync:'pending', createdAt:now, updatedAt:now};
+      it.label = itemTitle(it); db.items.push(it); }
+    queue('goals', {id:g.id, name:g.name, target:g.target, due:g.due || '', status:'closed', order:g.order});
+    persist(); closeM('#mGoal'); renderAll(); toast(`ปิดกระปุก${g.name}แล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง`);
   });
+};
+$('#goDel').onclick = () => {
+  const g = gOf(goalEdit); if(!g) return;
+  ask(`ลบกระปุก${g.name}?`, 'กระปุกนี้ยังไม่มีรายการ ลบได้เลย', () => { queueDelete('goals', g); persist(); closeM('#mGoal'); renderAll(); toast('ลบกระปุกแล้ว'); }, 'ลบ');
 };
 const mv = {id:'', dir:'in'};
 function openMove(id, dir){
-  const f = goals().find(g => g.id === id); if(!f) return;
+  const g = gOf(id); if(!g) return;
   Object.assign(mv, {id, dir});
-  const D = localDelta(), b = fundBal(f, D), y = yuchoAcc(), free = y ? accBal(y, D) - activeGoals().reduce((x,g) => x + fundBal(g, D), 0) : null;
-  $('#mvT').textContent = dir === 'in' ? `ใส่เงินเข้ากระปุก${f.name}` : `ถอนจากกระปุก${f.name}`;
-  $('#mvInfo').innerHTML = `<small>ในกระปุกตอนนี้</small><div class="big2">${yen(b)}${f.target ? ' / ' + yen(f.target) : ''}</div>${f.target ? meter(b, f.target) : ''}
-    <small>${dir === 'in' ? (free !== null ? 'เงินใน ゆうちょ ที่ยังไม่ได้แบ่ง ' + yen(free) : '') : 'ถอนแล้วเงินกลับไปเป็นเงินที่ยังไม่ได้แบ่งใน ゆうちょ'}</small>`;
+  const D = localDelta(), b = gBal(g, D), fm = freeMoney(D);
+  $('#mvT').textContent = dir === 'in' ? `ใส่เงินเข้ากระปุก${g.name}` : `ถอนจากกระปุก${g.name}`;
+  $('#mvInfo').innerHTML = `<small>ในกระปุกตอนนี้</small><div class="big2">${yen(b)}${g.target ? ' / ' + yen(g.target) : ''}</div>${g.target ? meter(b, g.target) : ''}`;
+  $('#mvHint').textContent = dir === 'in' ? (fm ? `${fm.w.name} มีเงินที่ยังไม่ได้แบ่ง ${yen(fm.free)}` : '') : 'ถอนแล้วเงินกลับไปเป็นเงินที่ยังไม่ได้แบ่ง';
   $('#mvAmt').value = ''; $('#mvNote').value = ''; $('#mvErr').textContent = '';
   openM('#mMove'); $('#mvAmt').focus();
 }
+$('#mvAmt').oninput = () => {
+  if(mv.dir !== 'in') return;
+  const fm = freeMoney(localDelta()), a = parseAmt($('#mvAmt').value);
+  $('#mvErr').textContent = fm && a > fm.free ? `⚠️ ใส่ได้อีกแค่ ${yen(Math.max(0, fm.free))} ถ้าใส่เกิน เงินในกระปุกจะมากกว่าเงินจริงใน ${fm.w.name}` : '';
+};
 $('#mvCancel').onclick = () => closeM('#mMove');
 $('#mvOk').onclick = () => {
-  const f = goals().find(g => g.id === mv.id); if(!f) return;
-  const amount = parseAmt($('#mvAmt').value), b = fundBal(f, localDelta());
+  const g = gOf(mv.id); if(!g) return;
+  const amount = parseAmt($('#mvAmt').value), b = gBal(g, localDelta());
   const err = !(amount > 0) ? 'กรุณากรอกจำนวนเงินเป็นตัวเลขจำนวนเต็มมากกว่า 0' : mv.dir === 'out' && amount > b ? `ถอนได้ไม่เกิน ${yen(b)}` : '';
-  $('#mvErr').textContent = err; if(err) return;
-  const it = {type:'fund_move', amount, ts:toLocalInput(new Date()), note:$('#mvNote').value.trim(), lineId:'', from:'', to:'',
-    fromFund: mv.dir === 'out' ? f.id : '', toFund: mv.dir === 'in' ? f.id : '', eventId:'',
-    category: (mv.dir === 'in' ? 'ใส่เงินเข้ากระปุก ' : 'ถอนจากกระปุก ') + f.name};
+  if(err){ $('#mvErr').textContent = err; return; }
+  const it = {type: mv.dir === 'in' ? 'goal_in' : 'goal_out', amount, fee:0, ts:toLocalInput(new Date()), note:$('#mvNote').value.trim(), cat:'', from:'', to:'', goal:g.id};
   closeM('#mMove'); showReview(it);
 };
 $('#goals').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   if(b.id === 'goNew') return openGoal();
+  if(b.dataset.recon) return openRecon(b.dataset.recon);
   if(b.dataset.ged) return openGoal(b.dataset.ged);
   if(b.dataset.gin) return openMove(b.dataset.gin, 'in');
   if(b.dataset.gout) return openMove(b.dataset.gout, 'out');
   if(b.dataset.gpay){                       // a purchase paid from this goal: the entry form, ready to go
-    Object.assign(sx, {type:'one_time', cat:'', line:null, to:'', fund:b.dataset.gpay, feeOn:false});
-    if(accList().some(a => a.id === 'yucho')) sx.from = 'yucho';
+    Object.assign(sx, {type:'goal_pay', goal:b.dataset.gpay, to:'', feeOn:false});
+    if(wOf(settings().goal_wallet)) sx.from = settings().goal_wallet;
     show('input'); focusAmt();
   }
 });
@@ -1231,14 +1304,13 @@ function range(f){
   const n = new Date(), s = new Date(n.getFullYear(), n.getMonth(), n.getDate());
   if(f === 'today') return [s, new Date(n.getFullYear(), n.getMonth(), n.getDate()+1)];
   if(f === 'week'){ const a = new Date(s.getFullYear(), s.getMonth(), s.getDate() - s.getDay() + 7*offset); return [a, new Date(a.getFullYear(), a.getMonth(), a.getDate()+7)]; }   // Sunday–Saturday
-  if(f === 'month'){ const s0 = sd(), m0 = n.getMonth() - (n.getDate() >= s0 ? 0 : 1) + offset; return [new Date(n.getFullYear(), m0, s0), new Date(n.getFullYear(), m0+1, s0)]; }  // pay cycle
+  if(f === 'month') return cycleRange(shiftKey(curKey(), offset));
   return null;
 }
 function inView(){
   const r = range(filter);
   return db.items.filter(it => filter === 'pending' ? it.sync !== 'ok' : !r || (parseTs(it.ts) >= r[0] && parseTs(it.ts) < r[1]));
 }
-/* sorted by the entry's own date and time, not by when it was recorded */
 function visible(){
   const dir = sortAsc ? 1 : -1;
   return inView().filter(it => !dayPicks.size || dayPicks.has(it.ts.slice(0,10)))
@@ -1256,11 +1328,10 @@ function renderCal(){
   if(!isCal()){ el.hidden = true; return; }
   el.hidden = false;
   const [a,b] = range(filter), totals = {}, moveOnly = {};
-  inView().forEach(it => { const k = it.ts.slice(0,10); if(isMove(it)) moveOnly[k] = true; else totals[k] = (totals[k] || 0) + it.amount; });
+  inView().forEach(it => { const k = it.ts.slice(0,10), v = spendOf(it); if(!v) moveOnly[k] = true; else totals[k] = (totals[k] || 0) + v; });
   const max = Math.max(1, ...Object.values(totals));
   const last = new Date(b.getFullYear(), b.getMonth(), b.getDate()-1);
-  const title = filter === 'month'
-    ? `รอบ ${TH_MON[last.getMonth()]} ${last.getFullYear()} · ${a.getDate()} ${TH_MON[a.getMonth()]}–${last.getDate()} ${TH_MON[last.getMonth()]}`
+  const title = filter === 'month' ? `รอบ ${shiftKey(curKey(), offset)} · ${cycleTitle(shiftKey(curKey(), offset))}`
     : `${a.getDate()} ${TH_MON[a.getMonth()]} – ${last.getDate()} ${TH_MON[last.getMonth()]} ${last.getFullYear()}`;
   const g0 = new Date(a.getFullYear(), a.getMonth(), a.getDate() - a.getDay()), cells = [], today = dayKey(new Date());
   for(let d = new Date(g0); d < b || d.getDay() !== 0; d.setDate(d.getDate()+1)){
@@ -1280,29 +1351,28 @@ function renderHist(){
   $('#hFilters').innerHTML = FILTERS.filter(([k]) => k !== 'pending' || nP).map(([k,n]) =>
     `<button class="chip${filter===k?' on':''}" data-f="${k}" role="tab" aria-selected="${filter===k}">${n}${k === 'pending' ? ` (${nP})` : ''}</button>`).join('');
   renderCal();
-  const vis = visible(), spend = vis.filter(i => !isMove(i)), total = spend.reduce((s,i) => s + i.amount, 0), moves = vis.filter(isMove).reduce((s,i) => s + i.amount, 0);
-  const byCat = {}; spend.forEach(i => byCat[i.category] = (byCat[i.category] || 0) + i.amount);
-  const cats = Object.entries(byCat).sort((a,b) => b[1] - a[1]), max = cats.length ? cats[0][1] : 1;
-  let sheetLine = '';
-  if(ready() && filter === 'month' && offset === 0){
-    const D = localDelta(), u = cfg().lines.reduce((x,l) => x + lineUsed(l, D), 0);
-    sheetLine = ` · ทั้งรอบตามชีต ${yen(u)}`;
-  }
-  $('#hSum').innerHTML = `<small>รายจ่าย${dayPicks.size ? ` ${dayPicks.size} วันที่เลือก` : 'ในมุมมองนี้'} (${spend.length} รายการ)</small>
-    <div class="big">${yen(total)}</div><small>ย้ายเงิน/รับเงิน/กระปุก ${yen(moves)} (ไม่นับเป็นรายจ่าย)${sheetLine}</small>
-    <div class="bars">${cats.map(([c,v]) => `<div class="bar"><span>${esc(c)}</span><i style="width:${Math.max(3, v/max*100)}%"></i><span class="n">${yen(v)}</span></div>`).join('')}</div>`;
+  const vis = visible(), total = vis.reduce((s,i) => s + spendOf(i), 0), nSpend = vis.filter(i => spendOf(i)).length;
+  const byCat = {};
+  vis.forEach(i => { const v = spendOf(i); if(!v) return;
+    const c = i.type === 'expense' ? i.cat : i.type === 'transfer' ? settings().transfer_fee_category : '';      // a transfer fee counts under its chosen category
+    const label = c ? (cOf(mainOf(c)) || {}).name || i.label : 'จ่ายจากกระปุก';
+    byCat[label] = (byCat[label] || 0) + v; });
+  const cs = Object.entries(byCat).sort((a,b) => b[1] - a[1]), max = cs.length ? cs[0][1] : 1;
+  $('#hSum').innerHTML = `<small>รายจ่าย${dayPicks.size ? ` ${dayPicks.size} วันที่เลือก` : 'ในมุมมองนี้'} (${nSpend} รายการ)</small>
+    <div class="big">${yen(total)}</div><small>ไม่รวมย้ายเงิน รับเงิน และใส่/ถอนกระปุก</small>
+    <div class="bars">${cs.map(([c,v]) => `<div class="bar"><span>${esc(c)}</span><i style="width:${Math.max(3, v/max*100)}%"></i><span class="n">${yen(v)}</span></div>`).join('')}</div>`;
   $('#hSort').textContent = sortAsc ? 'เรียง: วันเก่า → ใหม่' : 'เรียง: วันใหม่ → เก่า';
   const out = []; let day = '';
   for(const it of vis){
     const k = it.ts.slice(0,10);
     if(k !== day){
       day = k;
-      const dt = vis.filter(i => i.ts.slice(0,10) === k && !isMove(i)).reduce((s,i) => s + i.amount, 0), d = parseTs(k + 'T00:00');
+      const dt = vis.filter(i => i.ts.slice(0,10) === k).reduce((s,i) => s + spendOf(i), 0), d = parseTs(k + 'T00:00');
       out.push(`<li class="dayh"><span>${fmtDay(d)} ${d.getFullYear()}</span><span class="n">${yen(dt)}</span></li>`);
     }
     out.push(`<li><div class="it">
-        <div class="t">${esc(it.category)}${it.from && it.type !== 'transfer' ? `<span class="tag">${esc(accName(it.from))}</span>` : ''}${statusTag(it)}</div>
-        <div class="m">${it.ts.slice(11,16)} · ${esc(TYPE_NAME[it.type])}${it.note ? ' · ' + esc(it.note) : ''}</div></div>
+        <div class="t">${esc(itemTitle(it))}${it.from && it.type !== 'transfer' && it.type !== 'adjust' ? `<span class="tag">${esc(wName(it.from))}</span>` : ''}${statusTag(it)}</div>
+        <div class="m">${it.ts.slice(11,16)} · ${esc(TYPE_NAME[it.type])}${it.fee ? ' · ค่าธรรมเนียม ' + yen(it.fee) : ''}${it.note && it.type !== 'goal_pay' ? ' · ' + esc(it.note) : ''}</div></div>
       <div class="right"><div class="a${isMove(it) ? ' nx' : ''}">${yen(it.amount)}</div>
         <button class="icon" data-ed="${esc(it.id)}" aria-label="แก้ไข">✏️</button><button class="icon" data-del="${esc(it.id)}" aria-label="ลบ">🗑️</button></div></li>`);
   }
@@ -1323,21 +1393,14 @@ $('#hList').onclick = e => {
   if(ed) return openEdit(ed.dataset.ed);
   if(!d) return;
   const it = db.items.find(i => i.id === d.dataset.del); if(!it) return;
-  // deleting an entry takes its fee with it; deleting a fee leaves the entry
-  const fee = it.feeId ? db.items.find(i => i.id === it.feeId) : null;
-  const parent = it.feeOf ? db.items.find(i => i.id === it.feeOf) : null;
-  const gone = [it, fee].filter(Boolean);
-  db.items = db.items.filter(i => !gone.includes(i));
-  if(parent) delete parent.feeId;
+  db.items = db.items.filter(i => i !== it);
   // something the sheet already has must be deleted there on the next push
-  const queued = gone.filter(g => g.synced).map(g => ({id:g.id, category:g.category, amount:g.synced.amount, ts:g.synced.ts, synced:g.synced}));
-  db.sheet.deletes.push(...queued);
+  const queued = it.synced ? {id:it.id, label:itemTitle(it), amount:it.synced.amount, ts:it.synced.ts, synced:it.synced} : null;
+  if(queued) db.sheet.deletes.push(queued);
   persist(); renderAll();
-  toast(`ลบ ${it.category} ${yen(it.amount)}${fee ? ' พร้อมค่าธรรมเนียม' : ''}${queued.length ? ' · ลบในชีตเมื่อกดส่ง' : ''}`, 'เลิกทำ', () => {
-    db.items.push(...gone);
-    if(parent) parent.feeId = it.id;
-    const ids = new Set(queued.map(q => q.id));
-    db.sheet.deletes = db.sheet.deletes.filter(x => !ids.has(x.id));
+  toast(`ลบ ${itemTitle(it)} ${yen(it.amount)}${queued ? ' · ลบในชีตเมื่อกดส่ง' : ''}`, 'เลิกทำ', () => {
+    db.items.push(it);
+    if(queued) db.sheet.deletes = db.sheet.deletes.filter(x => x.id !== it.id);
     persist(); renderAll();
   });
 };
@@ -1347,64 +1410,47 @@ let editId = null;
 function openEdit(id){
   const it = db.items.find(i => i.id === id); if(!it || !ready()) return;
   editId = id;
-  const D = localDelta(), t = it.type;
-  $('#edAmt').value = it.amount; $('#edNote').value = it.note || ''; setDT($('#edTime'), it.ts); $('#edErr').textContent = '';
-  $('#edLineW').hidden = t !== 'expense';
-  $('#edLine').innerHTML = cfg().lines.map(l => `<option value="${esc(l.id)}"${l.id===it.lineId?' selected':''}>${esc(l.category)} · ${esc(l.item)}</option>`).join('');
-  $('#edFromW').hidden = t === 'income' || t === 'adjust' || t === 'fund_move';
-  $('#edFromL').textContent = t === 'transfer' ? 'จากบัญชี' : 'จ่ายจาก';
-  $('#edFrom').innerHTML = accOpts(it.from, D, '', 'เลือกบัญชี');
-  $('#edToW').hidden = !(t === 'transfer' || t === 'income');      // an adjustment keeps its direction
-  $('#edTo').innerHTML = accOpts(it.to, D, '', 'เลือกบัญชี');
-  $('#edFundW').hidden = !(t === 'one_time' || t === 'income' || t === 'fund_move');
-  $('#edFund').innerHTML = fundOpts(t === 'one_time' ? it.fromFund : t === 'fund_move' ? (it.toFund || it.fromFund) : it.toFund, D, t === 'one_time' ? 'เลือกกระปุก' : 'ไม่เข้ากระปุก');
-  const fee = it.feeId ? db.items.find(i => i.id === it.feeId) : null;
-  $('#edFeeW').hidden = !!it.feeOf || !canFee(t);
-  $('#edFee').value = fee ? fee.amount : '';
-  $('#edFeeHint').textContent = it.feeOf ? '' : feeWhere(it);
+  const D = localDelta(), t = it.type, fee = it.fee || 0;
+  $('#edAmt').value = t === 'transfer' ? it.amount : it.amount - fee; $('#edNote').value = it.note || ''; setDT($('#edTime'), it.ts); $('#edErr').textContent = '';
+  $('#edFeeW').hidden = !FEE_TYPES.includes(t); $('#edFee').value = fee || '';
+  $('#edCatW').hidden = t !== 'expense';
+  const leaves = leafCats(); if(it.cat && !leaves.some(c => c.id === it.cat) && cOf(it.cat)) leaves.push(cOf(it.cat));
+  $('#edCat').innerHTML = leaves.map(c => `<option value="${esc(c.id)}"${c.id===it.cat?' selected':''}>${esc(catLabel(c.id))}</option>`).join('');
+  $('#edGoalW').hidden = !/^goal_/.test(t);
+  $('#edGoal').innerHTML = gOpts(it.goal, D, 'เลือกกระปุก');
+  $('#edFromW').hidden = !(t === 'expense' || t === 'transfer' || t === 'goal_pay');
+  $('#edFromL').textContent = t === 'transfer' ? 'จากกระเป๋า' : 'จ่ายจาก';
+  $('#edFrom').innerHTML = wOpts(it.from, D, '', 'เลือกกระเป๋า');
+  $('#edToW').hidden = !(t === 'transfer' || t === 'income');
+  $('#edToL').textContent = t === 'income' ? 'รับเข้ากระเป๋า' : 'ไปกระเป๋า';
+  $('#edTo').innerHTML = wOpts(it.to, D, '', 'เลือกกระเป๋า');
   openM('#mEdit');
 }
 $('#edCancel').onclick = () => closeM('#mEdit');
 $('#fEd').onsubmit = e => {
   e.preventDefault();
   const it = db.items.find(i => i.id === editId); if(!it) return;
-  const amount = parseAmt($('#edAmt').value), ts = getDT($('#edTime')), t = it.type;
-  const from = $('#edFrom').value, to = $('#edTo').value, fund = $('#edFund').value, l = lineOf($('#edLine').value);
-  const err = !(amount > 0) ? 'จำนวนเงินไม่ถูกต้อง' : (!ts || isNaN(parseTs(ts))) ? 'วันและเวลาไม่ถูกต้อง'
-    : t === 'expense' && (!l || !from) ? 'กรุณาเลือกหมวดและบัญชี'
-    : t === 'fund_move' && !fund ? 'กรุณาเลือกกระปุก'
-    : t === 'transfer' && (!from || !to || from === to) ? 'เลือกบัญชีต้นทางและปลายทางที่ต่างกัน'
-    : t === 'income' && !to ? 'กรุณาเลือกบัญชีที่รับเงิน'
-    : t === 'one_time' && (!from || !fund) ? 'กรุณาเลือกบัญชีและกระปุก' : '';
+  const t = it.type, base = parseAmt($('#edAmt').value), ts = getDT($('#edTime'));
+  const feeRaw = $('#edFee').value.trim(), fee = !FEE_TYPES.includes(t) || feeRaw === '' ? 0 : parseAmt(feeRaw);
+  const from = $('#edFrom').value, to = $('#edTo').value, goal = $('#edGoal').value, cat = $('#edCat').value;
+  const err = !(base > 0) ? 'จำนวนเงินไม่ถูกต้อง' : !(fee >= 0) ? 'ค่าธรรมเนียมต้องเป็นตัวเลขจำนวนเต็ม หรือเว้นว่าง'
+    : (!ts || isNaN(parseTs(ts))) ? 'วันและเวลาไม่ถูกต้อง'
+    : t === 'expense' && (!cat || !from) ? 'กรุณาเลือกหมวดและกระเป๋า'
+    : t === 'transfer' && (!from || !to || from === to) ? 'เลือกกระเป๋าต้นทางและปลายทางที่ต่างกัน'
+    : t === 'transfer' && fee && !cOf(settings().transfer_fee_category) ? 'ตั้งหมวดสำหรับค่าธรรมเนียมตอนย้ายเงินในแท็บตั้งค่าก่อน'
+    : t === 'income' && !to ? 'กรุณาเลือกกระเป๋าที่รับเงิน'
+    : t === 'goal_pay' && (!from || !goal) ? 'กรุณาเลือกกระเป๋าและกระปุก'
+    : /^goal_(in|out)$/.test(t) && !goal ? 'กรุณาเลือกกระปุก' : '';
   $('#edErr').textContent = err; if(err) return;
-  Object.assign(it, {amount, ts, note:$('#edNote').value.trim(), updatedAt:new Date().toISOString()});
-  if(t === 'expense') Object.assign(it, {lineId:l.id, from, category:l.item});
-  if(t === 'transfer') Object.assign(it, {from, to, category:`ย้ายเงิน ${accName(from)} → ${accName(to)}`});
-  if(t === 'income') Object.assign(it, {to, toFund:fund, category:'รับเงิน ' + accName(to) + (fund ? ' → กระปุก' + fundName(fund) : '')});
-  if(t === 'one_time') Object.assign(it, {from, fromFund:fund, category: it.note || 'จ่ายจากกระปุก ' + fundName(fund)});
-  if(t === 'fund_move'){
-    if(it.toFund) Object.assign(it, {toFund:fund, category:'ใส่เงินเข้ากระปุก ' + fundName(fund)});
-    else Object.assign(it, {fromFund:fund, category:'ถอนจากกระปุก ' + fundName(fund)});
-  }
-  it.sync = 'pending'; delete it.syncError;
-  // keep the paired fee in step: create, update or remove it
-  let feeMsg = '';
-  if(!it.feeOf && canFee(t)){
-    const raw = $('#edFee').value.trim(), feeAmt = raw === '' ? 0 : parseAmt(raw);
-    if(raw !== '' && !(feeAmt > 0)){ $('#edErr').textContent = 'ค่าธรรมเนียมต้องเป็นตัวเลขจำนวนเต็มมากกว่า 0 หรือเว้นว่าง'; return; }
-    const old = it.feeId ? db.items.find(i => i.id === it.feeId) : null, now = new Date().toISOString();
-    if(feeAmt > 0){
-      const f = feeFor(it, feeAmt, it.id);
-      if(old){ Object.assign(old, f, {sync:'pending', updatedAt:now}); delete old.syncError; }
-      else { const n = {id:uid(), ...f, sync:'pending', createdAt:now, updatedAt:now}; db.items.push(n); it.feeId = n.id; feeMsg = ' + เพิ่มค่าธรรมเนียม ' + yen(feeAmt); }
-    } else if(old){
-      db.items = db.items.filter(i => i !== old);
-      if(old.synced) db.sheet.deletes.push({id:old.id, category:old.category, amount:old.synced.amount, ts:old.synced.ts, synced:old.synced});
-      delete it.feeId; feeMsg = ' · เอาค่าธรรมเนียมออก';
-    }
-  }
+  Object.assign(it, {amount: t === 'transfer' ? base : base + fee, fee, ts, note:$('#edNote').value.trim(), updatedAt:new Date().toISOString()});
+  if(t === 'expense') Object.assign(it, {cat, from});
+  if(t === 'transfer') Object.assign(it, {from, to});
+  if(t === 'income') Object.assign(it, {to});
+  if(t === 'goal_pay') Object.assign(it, {from, goal});
+  if(/^goal_(in|out)$/.test(t)) Object.assign(it, {goal});
+  it.label = itemTitle(it); it.sync = 'pending'; delete it.syncError;
   persist(); closeM('#mEdit'); renderAll();
-  toast('แก้ไขแล้ว' + feeMsg + ' · จะเปลี่ยนในชีตเมื่อกดส่ง');
+  toast('แก้ไขแล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง');
 };
 
 /* ================= Settings ================= */
@@ -1413,12 +1459,149 @@ function renderSettings(){
   $('#shUrl').value = s ? s.url : ''; $('#shToken').value = s ? s.token : '';
   $('#shPull').disabled = !sheetOn();
   $('#shStatus').innerHTML = !sheetOn() ? '<small>ยังไม่ได้เชื่อมต่อ · ใส่ URL ของ Web app และ TOKEN แล้วกดบันทึกและเชื่อมต่อ</small>'
-    : `<small>${s.lastError ? '⚠️ ' + esc(s.lastError) : cfg() ? '☁ เชื่อมต่อแล้ว · รอบ ' + cfg().cycle.key : 'ยังไม่ได้โหลดข้อมูลจากชีต'} · อัปเดตล่าสุด ${s.lastSync ? esc(fmtDT(toLocalInput(new Date(s.lastSync)))) : '-'} · รอส่ง ${n} รายการ</small>`;
+    : `<small>${s.lastError ? '⚠️ ' + esc(s.lastError) : cfg() ? '☁ เชื่อมต่อแล้ว' : 'ยังไม่ได้โหลดข้อมูลจากชีต'} · อัปเดตล่าสุด ${s.lastSync ? esc(fmtDT(toLocalInput(new Date(s.lastSync)))) : '-'} · รอส่ง ${n} รายการ</small>`;
+  renderSetBody();
   const sent = db.items.filter(i => i.sync === 'ok').length;
   $('#stInfo').innerHTML = `<small>ประวัติในเครื่องนี้</small><div class="big">${db.items.length} รายการ</div>
     <small>ส่งขึ้นชีตแล้ว ${sent} · รอส่ง ${n} · <span id="stPersist">กำลังตรวจสอบพื้นที่จัดเก็บ…</span></small>`;
   $('#stClear').disabled = !sent;
-  checkPersist();
+  checkPersist(); renderOld();
+}
+function renderSetBody(){
+  const el = $('#setBody');
+  if(!ready()){ el.innerHTML = ''; return; }
+  const D = localDelta(), st = settings(), ws = wallets(), vis = ws.filter(w => w.status !== 'hidden'), hid = ws.filter(w => w.status === 'hidden');
+  const ms = mains(true), k = curKey();
+  const tag = x => x.queued ? `<span class="tag ${x.error ? 'e' : 'p'}">${x.error ? 'ชีตไม่รับ: ' + esc(x.error) : 'รอส่ง'}</span>` : '';
+  const updown = (kind, x, i, n) => `<button class="icon" data-mv="${kind}|${esc(x.id)}|-1" aria-label="เลื่อนขึ้น" ${i === 0 ? 'disabled' : ''}>↑</button><button class="icon" data-mv="${kind}|${esc(x.id)}|1" aria-label="เลื่อนลง" ${i === n - 1 ? 'disabled' : ''}>↓</button>`;
+  const catRow = (c, i, n, sub) => `<li class="${sub ? 'sub' : ''}"><span class="nm">${esc(c.name)} ${tag(c)}</span><span class="acts">${updown('categories', c, i, n)}
+      <button class="icon" data-ced="${esc(c.id)}" aria-label="แก้ไข">✏️</button>${sub ? '' : `<button class="icon" data-cadd="${esc(c.id)}" aria-label="เพิ่มหมวดย่อย">＋</button>`}</span></li>`;
+  const visM = ms.filter(m => m.status !== 'hidden'), hidC = cats().filter(c => c.status === 'hidden');
+  const empty = !ws.length && !cats().length;
+  el.innerHTML = `
+    ${empty ? `<div class="card"><p>ชีตยังว่างอยู่ เริ่มด้วยชุดตั้งต้น (กระเป๋า 5 ใบ หมวดและหมวดย่อยที่ใช้บ่อย) แล้วแก้ทีหลังได้ หรือจะเพิ่มเองทีละอันก็ได้</p><button class="btn pri" id="starter">ใช้ชุดตั้งต้น</button></div>` : ''}
+    <hr><h2>รอบเดือน</h2>
+    <label class="l" for="setDay">วันเริ่มรอบ</label>
+    <select class="f" id="setDay">${Array.from({length:28}, (_,i) => `<option value="${i+1}"${st.cycle_start_day == i+1 ? ' selected' : ''}>${i === 0 ? 'วันที่ 1 (ตามเดือนปฏิทิน)' : 'วันที่ ' + (i+1)}</option>`).join('')}</select>
+    <p class="hint">รอบปัจจุบัน ${k}: ${cycleTitle(k)} · รอบตั้งชื่อตามเดือนที่รอบสิ้นสุด</p>
+
+    <hr><h2>กระเป๋าเงิน</h2>
+    <ul class="sl">${vis.map((w,i) => `<li><span class="nm">${esc(w.name)} ${tag(w)}<small>${yen(wBal(w, D))} · ยอดเปิด ${yen(w.opening || 0)} ณ ${w.openDate ? esc(fmtDate(w.openDate)) : '-'}</small></span>
+      <span class="acts">${updown('wallets', w, i, vis.length)}<button class="icon" data-wed="${esc(w.id)}" aria-label="แก้ไข">✏️</button></span></li>`).join('') || '<li><span class="hint">ยังไม่มีกระเป๋า</span></li>'}</ul>
+    <button class="btn sm" id="wAdd">＋ เพิ่มกระเป๋า</button>
+    ${hid.length ? `<details class="dl"><summary><div class="drow"><div class="top"><span>กระเป๋าที่ซ่อนไว้ (${hid.length})</span><span></span></div></div></summary>
+      <ul class="sl">${hid.map(w => `<li><span class="nm">${esc(w.name)}</span><span class="acts"><button class="btn sm" data-wshow="${esc(w.id)}">แสดงอีกครั้ง</button></span></li>`).join('')}</ul></details>` : ''}
+    <label class="l" for="setGoalW">กระปุกใช้เงินจากกระเป๋า</label>
+    <select class="f" id="setGoalW"><option value="">เลือกกระเป๋า</option>${vis.map(w => `<option value="${esc(w.id)}"${st.goal_wallet === w.id ? ' selected' : ''}>${esc(w.name)}</option>`).join('')}</select>
+
+    <hr><h2>หมวด</h2>
+    <ul class="sl">${visM.map((m,i) => { const subs = subsOf(m.id); return catRow(m, i, visM.length, false) + subs.map((c,j) => catRow(c, j, subs.length, true)).join(''); }).join('') || '<li><span class="hint">ยังไม่มีหมวด</span></li>'}</ul>
+    <button class="btn sm" id="cAdd">＋ เพิ่มหมวดหลัก</button>
+    ${hidC.length ? `<details class="dl"><summary><div class="drow"><div class="top"><span>หมวดที่ซ่อนไว้ (${hidC.length})</span><span></span></div></div></summary>
+      <ul class="sl">${hidC.map(c => `<li><span class="nm">${esc(catLabel(c.id))}</span><span class="acts"><button class="btn sm" data-cshow="${esc(c.id)}">แสดงอีกครั้ง</button></span></li>`).join('')}</ul></details>` : ''}
+    <label class="l" for="setFeeC">ค่าธรรมเนียมตอนย้ายเงิน นับเข้าหมวด</label>
+    <select class="f" id="setFeeC"><option value="">ยังไม่ได้เลือก</option>${leafCats().concat(visM.filter(m => subsOf(m.id).length)).map(c => `<option value="${esc(c.id)}"${st.transfer_fee_category === c.id ? ' selected' : ''}>${esc(catLabel(c.id))}</option>`).join('')}</select>
+    <p class="hint">เช่น ค่ากด ATM ตอนกดเงินสด · ค่าธรรมเนียมของรายจ่ายทั่วไปนับรวมในหมวดของรายการนั้นเอง</p>`;
+}
+const setQ = (key, v) => { const base = cfg() ? cfg().settings[key] : undefined; if(String(base) === String(v)) delete db.q.settings[key]; else db.q.settings[key] = v; persist(); renderAll(); };
+$('#setBody').addEventListener('change', e => {
+  if(e.target.id === 'setDay') setQ('cycle_start_day', Number(e.target.value));
+  if(e.target.id === 'setGoalW') setQ('goal_wallet', e.target.value);
+  if(e.target.id === 'setFeeC') setQ('transfer_fee_category', e.target.value);
+});
+$('#setBody').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.id === 'starter') return starter();
+  if(b.id === 'wAdd') return openWallet();
+  if(b.id === 'cAdd') return openCat(null, '');
+  if(b.dataset.wed) return openWallet(b.dataset.wed);
+  if(b.dataset.ced) return openCat(b.dataset.ced);
+  if(b.dataset.cadd) return openCat(null, b.dataset.cadd);
+  if(b.dataset.wshow){ const w = wOf(b.dataset.wshow); queue('wallets', {...pickF('wallets', w), status:'active'}); persist(); renderAll(); return; }
+  if(b.dataset.cshow){ const c = cOf(b.dataset.cshow); queue('categories', {...pickF('categories', c), status:'active'}); if(c.parent){ const p = cOf(c.parent); if(p.status === 'hidden') queue('categories', {...pickF('categories', p), status:'active'}); } persist(); renderAll(); return; }
+  if(b.dataset.mv){
+    const [kind, id, dir] = b.dataset.mv.split('|'), x = merged(kind).find(i => i.id === id);
+    const sib = kind === 'wallets' ? activeW() : (x.parent ? subsOf(x.parent) : mains());
+    const i = sib.findIndex(s => s.id === id), j = i + Number(dir); if(j < 0 || j >= sib.length) return;
+    sib.forEach((s, n) => s.order = n + 1);                 // renumber, then swap the two
+    [sib[i].order, sib[j].order] = [sib[j].order, sib[i].order];
+    sib.forEach(s => { const cur = merged(kind).find(m => m.id === s.id); if(cur.order !== s.order) queue(kind, {...pickF(kind, cur), order:s.order}); });
+    persist(); renderAll();
+  }
+});
+const pickF = (kind, x) => Object.assign({id:x.id}, Object.fromEntries(FIELDS[kind].map(f => [f, x[f] ?? (f === 'parent' ? '' : f === 'opening' ? 0 : '')])));
+
+let walletEdit = null;
+function openWallet(id){
+  const w = id ? wOf(id) : null; walletEdit = w ? w.id : null;
+  $('#waT').textContent = w ? 'แก้ไขกระเป๋า' : 'เพิ่มกระเป๋าเงิน';
+  $('#waName').value = w ? w.name : ''; $('#waOpen').value = w ? w.opening || 0 : ''; $('#waDate').value = w ? w.openDate || todayStr() : todayStr();
+  $('#waEndW').hidden = !w; $('#waErr').textContent = '';
+  if(w) $('#waDel').textContent = w.used || usedLocal('wallets', w.id) ? 'ซ่อนกระเป๋านี้' : 'ลบกระเป๋านี้';
+  openM('#mWallet'); if(!w) $('#waName').focus();
+}
+$('#waCancel').onclick = () => closeM('#mWallet');
+$('#fWallet').onsubmit = e => {
+  e.preventDefault();
+  const name = $('#waName').value.trim(), oRaw = $('#waOpen').value.trim(), opening = oRaw === '' ? 0 : parseSigned(oRaw), openDate = $('#waDate').value;
+  const err = !name ? 'กรุณาตั้งชื่อกระเป๋า' : isNaN(opening) ? 'ยอดเปิดต้องเป็นตัวเลขจำนวนเต็ม' : !openDate ? 'กรุณาเลือกวันที่'
+    : wallets().some(w => w.name === name && w.id !== walletEdit) ? 'มีกระเป๋าชื่อนี้อยู่แล้ว' : '';
+  $('#waErr').textContent = err; if(err) return;
+  if(walletEdit){ const w = wOf(walletEdit); queue('wallets', {id:w.id, name, opening, openDate, order:w.order, status:w.status || 'active'}); }
+  else queue('wallets', {id:rid('w'), name, opening, openDate, order:nextOrder(wallets()), status:'active', isNew:true});
+  persist(); closeM('#mWallet'); renderAll(); toast(`บันทึกกระเป๋า${name}แล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง`);
+};
+$('#waDel').onclick = () => {
+  const w = wOf(walletEdit); if(!w) return;
+  if(settings().goal_wallet === w.id){ $('#waErr').textContent = 'กระเป๋านี้เก็บเงินของกระปุกอยู่ เปลี่ยนกระเป๋าของกระปุกก่อน'; return; }
+  const used = w.used || usedLocal('wallets', w.id);
+  ask(used ? `ซ่อนกระเป๋า${w.name}?` : `ลบกระเป๋า${w.name}?`, used ? 'กระเป๋านี้มีรายการแล้ว จึงซ่อนแทนการลบ ประวัติยังอยู่ และแสดงอีกครั้งได้' : 'กระเป๋านี้ยังไม่มีรายการ ลบได้เลย', () => {
+    queueDelete('wallets', w); persist(); closeM('#mWallet'); renderAll();
+  }, used ? 'ซ่อน' : 'ลบ');
+};
+let catEdit = null, catParent = '';
+function openCat(id, parent){
+  const c = id ? cOf(id) : null; catEdit = c ? c.id : null; catParent = c ? c.parent || '' : parent || '';
+  $('#caT').textContent = c ? 'แก้ไขหมวด' : catParent ? 'เพิ่มหมวดย่อย' : 'เพิ่มหมวดหลัก';
+  $('#caParent').textContent = catParent ? `อยู่ใต้หมวด ${(cOf(catParent) || {}).name || ''}` : 'หมวดหลัก';
+  $('#caName').value = c ? c.name : ''; $('#caErr').textContent = ''; $('#caEndW').hidden = !c;
+  if(c) $('#caDel').textContent = c.used || usedLocal('categories', c.id) ? 'ซ่อนหมวดนี้' : 'ลบหมวดนี้';
+  openM('#mCat'); $('#caName').focus();
+}
+$('#caCancel').onclick = () => closeM('#mCat');
+$('#fCatEd').onsubmit = e => {
+  e.preventDefault();
+  const name = $('#caName').value.trim();
+  const sib = catParent ? subsOf(catParent, true) : mains(true);
+  const err = !name ? 'กรุณาตั้งชื่อหมวด' : sib.some(c => c.name === name && c.id !== catEdit) ? 'มีหมวดชื่อนี้อยู่แล้ว' : '';
+  $('#caErr').textContent = err; if(err) return;
+  if(catEdit){ const c = cOf(catEdit); queue('categories', {id:c.id, parent:c.parent || '', name, order:c.order, status:c.status || 'active'}); }
+  else queue('categories', {id:rid('c'), parent:catParent, name, order:nextOrder(sib), status:'active', isNew:true});
+  persist(); closeM('#mCat'); renderAll(); toast(`บันทึกหมวด${name}แล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง`);
+};
+$('#caDel').onclick = () => {
+  const c = cOf(catEdit); if(!c) return;
+  const subs = subsOf(c.id, true), used = c.used || usedLocal('categories', c.id);
+  if(!used && subs.length){ $('#caErr').textContent = 'ลบหมวดย่อยข้างในก่อน หรือย้ายรายการออกก่อน'; return; }
+  if(settings().transfer_fee_category === c.id){ $('#caErr').textContent = 'หมวดนี้ใช้นับค่าธรรมเนียมตอนย้ายเงินอยู่ เปลี่ยนในตั้งค่าก่อน'; return; }
+  ask(used || subs.length ? `ซ่อนหมวด${c.name}?` : `ลบหมวด${c.name}?`, used || subs.length ? 'หมวดนี้มีรายการแล้ว จึงซ่อนแทนการลบ ประวัติและกราฟย้อนหลังยังอยู่' : 'หมวดนี้ยังไม่มีรายการ ลบได้เลย', () => {
+    if(used || subs.length){ queue('categories', {...pickF('categories', c), status:'hidden'}); subs.forEach(s => { if(s.status !== 'hidden') queue('categories', {...pickF('categories', s), status:'hidden'}); }); }
+    else queueDelete('categories', c);
+    persist(); closeM('#mCat'); renderAll();
+  }, used || subs.length ? 'ซ่อน' : 'ลบ');
+};
+/* a ready-made start the user edits afterwards */
+function starter(){
+  const W = [['เงินสด'], ['ゆうちょ'], ['PayPay'], ['Rakuten Pay'], ['Co-op']];
+  const C = [['ที่พัก', ['ค่าเช่า', 'ค่าชำระบิลหอ']], ['สาธารณูปโภค', ['ค่าไฟฟ้า', 'ค่าแก๊ส', 'ค่าน้ำ', 'ค่าอินเทอร์เน็ต', 'ค่ามือถือ']],
+    ['อาหาร', ['ทำกินเอง', 'กินข้างนอก']], ['ของใช้', ['ในบ้าน', 'ส่วนตัว']], ['เดินทาง', []], ['สุขภาพ', ['ประกันสุขภาพ', 'ยิม']],
+    ['การเรียน', ['วิจัย/ประชุม', 'Subscription']], ['ส่วนตัว', []], ['อื่นๆ', []]];
+  const ids = {};
+  W.forEach(([n], i) => { const id = rid('w'); ids[n] = id; queue('wallets', {id, name:n, opening:0, openDate:todayStr(), order:i+1, status:'active', isNew:true}); });
+  C.forEach(([n, subs], i) => { const id = rid('c'); ids[n] = id; queue('categories', {id, parent:'', name:n, order:i+1, status:'active', isNew:true});
+    subs.forEach((s, j) => queue('categories', {id:rid('c'), parent:id, name:s, order:j+1, status:'active', isNew:true})); });
+  db.q.settings.goal_wallet = ids['ゆうちょ']; db.q.settings.transfer_fee_category = ids['อื่นๆ'];
+  persist(); renderAll(); toast('เพิ่มชุดตั้งต้นแล้ว · แก้ยอดเปิดของแต่ละกระเป๋าด้วย ✏️ แล้วกดส่งขึ้นชีต');
 }
 async function checkPersist(){
   const el = () => $('#stPersist');
@@ -1440,14 +1623,15 @@ $('#shConnect').onclick = async () => {
 $('#shPull').onclick = () => pull();
 // the sheet token never goes into a backup file
 const backupJson = () => JSON.stringify({app:'paynote', exportedAt:new Date().toISOString(), schemaVersion:SCHEMA,
-  items:db.items, goalQ:db.goalQ, sheet: db.sheet ? {url:db.sheet.url, deletes:db.sheet.deletes} : null}, null, 1);
+  items:db.items, q:db.q, sheet: db.sheet ? {url:db.sheet.url, deletes:db.sheet.deletes} : null}, null, 1);
+function download(name, text){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type:'application/json'}));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
 $('#stDl').onclick = () => {
-  try{
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([backupJson()], {type:'application/json'}));
-    a.download = `paynote-backup-${toLocalInput(new Date()).replace(/[:T]/g,'-')}.json`;
-    document.body.appendChild(a); a.click(); a.remove(); toast('ดาวน์โหลดไฟล์สำรองแล้ว');
-  }catch(e){ toast('ดาวน์โหลดไม่ได้ · ใช้ “คัดลอก JSON” แทน'); }
+  try{ download(`paynote-backup-${toLocalInput(new Date()).replace(/[:T]/g,'-')}.json`, backupJson()); toast('ดาวน์โหลดไฟล์สำรองแล้ว'); }
+  catch(e){ toast('ดาวน์โหลดไม่ได้ · ใช้ “คัดลอก JSON” แทน'); }
 };
 $('#stCopyJson').onclick = async () => {
   try{ await navigator.clipboard.writeText(backupJson()); toast('คัดลอก JSON แล้ว'); }
@@ -1455,14 +1639,13 @@ $('#stCopyJson').onclick = async () => {
 };
 function importJson(text){
   let d; try{ d = JSON.parse(text); }catch(e){ toast('ไฟล์ JSON ไม่ถูกต้อง'); return; }
-  if(!d || !Array.isArray(d.items)){ toast('ไม่พบรายการในไฟล์'); return; }
+  if(!d || d.app !== 'paynote' || !Array.isArray(d.items)){ toast('ไฟล์นี้ไม่ใช่ไฟล์สำรองของ PayNote เวอร์ชันนี้'); return; }
   const have = new Set(db.items.map(i => i.id)); let added = 0;
   for(const it of d.items){
     const amount = parseAmt(it.amount);
     if(!it.id || have.has(it.id) || !(amount > 0) || !TYPE_NAME[it.type] || isNaN(parseTs(it.ts))) continue;
-    db.items.push({id:String(it.id), ts:String(it.ts).slice(0,16), type:it.type, lineId:String(it.lineId || ''), category:String(it.category || ''),
-      amount, note:String(it.note || ''), from:String(it.from || it.method || ''), to:String(it.to || it.toAccount || ''),
-      fromFund:String(it.fromFund || ''), toFund:String(it.toFund || ''), eventId:'',
+    db.items.push({id:String(it.id), ts:String(it.ts).slice(0,16), type:it.type, cat:String(it.cat || ''), amount, fee:parseAmt(it.fee) || 0,
+      from:String(it.from || ''), to:String(it.to || ''), goal:String(it.goal || ''), note:String(it.note || ''), label:String(it.label || ''),
       sync: it.sync === 'ok' ? 'ok' : 'pending', synced: it.synced || undefined,
       createdAt: it.createdAt || new Date().toISOString(), updatedAt: it.updatedAt || new Date().toISOString()});
     added++;
@@ -1478,9 +1661,19 @@ $('#stClear').onclick = () => {
     toast('ล้างประวัติแล้ว', 'เลิกทำ', () => { db.items = db.items.concat(sent); persist(); renderAll(); });
   });
 };
+/* data from the earlier budget version stays untouched under its own key until the user removes it */
+function renderOld(){
+  const raw = localStorage.getItem(OLD_KEY), el = $('#oldData');
+  if(!raw){ el.innerHTML = ''; return; }
+  let n = 0; try{ n = (JSON.parse(raw).items || []).length; }catch(e){}
+  el.innerHTML = `<hr><h2>ข้อมูลจาก PayNote เวอร์ชันก่อน</h2><p class="hint">ยังเก็บอยู่ในเครื่อง ${n} รายการ (แอปเวอร์ชันนี้ไม่ใช้แล้ว ข้อมูลเดิมอยู่ในชีตเก่าด้วย)</p>
+    <div class="bar2"><button class="btn" id="oldDl">ดาวน์โหลดเก็บไว้</button><button class="btn warn" id="oldDel">ลบออกจากเครื่อง</button></div>`;
+  $('#oldDl').onclick = () => { try{ download('paynote-old-version.json', raw); toast('ดาวน์โหลดแล้ว'); }catch(e){ toast('ดาวน์โหลดไม่ได้'); } };
+  $('#oldDel').onclick = () => ask('ลบข้อมูลเวอร์ชันก่อน?', 'ลบเฉพาะในเครื่องนี้ ชีตเก่าไม่เปลี่ยน · แนะนำให้ดาวน์โหลดเก็บไว้ก่อน', () => { localStorage.removeItem(OLD_KEY); renderAll(); toast('ลบแล้ว'); }, 'ลบ');
+}
 
 /* ================= Boot ================= */
-persist();                       // store the migrated shape right away
+persist();
 renderAll();
 if(sheetOn()) pull(true);
 /* Offline support. When a newer version takes over, reload once so it shows right away.
