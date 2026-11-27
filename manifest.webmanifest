@@ -1,6 +1,6 @@
 {
-  "name": "บันทึกรายจ่าย",
-  "short_name": "รายจ่าย",
+  "name": "PayNote",
+  "short_name": "PayNote",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
