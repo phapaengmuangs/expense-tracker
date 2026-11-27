@@ -563,12 +563,12 @@ function renderInput(){
   if(sx.cat && !groups[sx.cat]) sx.cat = '';
   if(sx.line && !lineOf(sx.line)) sx.line = null;
   $('#inCat').innerHTML = '<option value="">เลือกหมวด</option>' + Object.entries(groups).map(([g, ls]) =>
-    `<option value="${esc(g)}"${sx.cat===g?' selected':''}>${esc(g)} · ${leftTxt(ls.reduce((x,l) => x + l.budget - lineUsed(l, D), 0))}</option>`).join('');
+    `<option value="${esc(g)}"${sx.cat===g?' selected':''}>${esc(g)}</option>`).join('');
   const ls = sx.cat ? groups[sx.cat] : [];
   $('#fSub').hidden = ls.length === 1;            // one item in the category: nothing to choose
   $('#inLine').disabled = !sx.cat;
   $('#inLine').innerHTML = `<option value="">${sx.cat ? 'เลือกรายการ' : 'เลือกหมวดก่อน'}</option>` +
-    ls.map(l => `<option value="${esc(l.id)}"${sx.line===l.id?' selected':''}>${esc(l.item)} · ${leftTxt(l.budget - lineUsed(l, D))}</option>`).join('');
+    ls.map(l => `<option value="${esc(l.id)}"${sx.line===l.id?' selected':''}>${esc(l.item)}</option>`).join('');
   renderLineInfo(ls, D);
   if(!accList().some(a => a.id === sx.from)) sx.from = '';
   $('#inFrom').innerHTML = accOpts(sx.from, D, '', 'เลือกบัญชี');
