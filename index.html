@@ -225,6 +225,18 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
 .warnbox{background:color-mix(in srgb,var(--amber) 14%,var(--bg));border:1.5px solid var(--amber);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:14px}
 .warnbox b{font-variant-numeric:tabular-nums}
 .impact .warnline{color:var(--amber);font-weight:600}
+/* split calculator */
+.calc{background:var(--card);border-radius:14px;padding:14px;margin-top:10px}
+.calc .pc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.calc .pc label{font-size:13px;color:var(--sub)}
+.calc .pc input{width:100%;border:1px solid var(--rule);background:var(--bg);border-radius:10px;padding:9px 10px;font-size:16px;text-align:right}
+.split{display:grid;gap:10px;margin-top:12px}
+.split .sp{background:var(--bg);border-radius:12px;padding:10px 12px;border-left:6px solid var(--c)}
+.split .sp .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.split .sp b{font-size:20px;font-variant-numeric:tabular-nums}
+.split .sp small{display:block;color:var(--sub);font-size:12px;margin-top:2px}
+.stack{display:flex;height:12px;border-radius:6px;overflow:hidden;margin-top:12px;gap:2px}
+.stack i{display:block;height:100%}
 </style>
 </head>
 <body>
@@ -501,8 +513,8 @@ const FEE_TYPES = ['expense', 'transfer', 'goal_pay'];
 const emptyQ = () => ({wallets:{}, categories:{}, goals:{}, settings:{}});
 let db = load();
 function load(){
-  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.items)){ d.q = Object.assign(emptyQ(), d.q || {}); d.last = d.last || {}; return d; } }catch(e){}
-  return {schemaVersion:SCHEMA, items:[], sheet:null, q:emptyQ(), last:{}};
+  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.items)){ d.q = Object.assign(emptyQ(), d.q || {}); d.last = d.last || {}; d.plan = d.plan || null; return d; } }catch(e){}
+  return {schemaVersion:SCHEMA, items:[], sheet:null, q:emptyQ(), last:{}, plan:null};
 }
 function persist(){
   try{ localStorage.setItem(KEY, JSON.stringify(db)); return true; }
@@ -1194,6 +1206,13 @@ $('#dash').addEventListener('click', e => {
    A goal is a share of the money in the goal wallet (ゆうちょ) set aside for something the user
    chose. Money goes in and out as goal_in / goal_out entries; a purchase paid from a goal is a
    goal_pay entry, so the sheet keeps the full history. */
+/* what a goal with a date needs each month to arrive on time (average month = 30.44 days) */
+function goalMonthly(g, b){
+  if(!g.due || !g.target || b >= g.target) return 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = Math.round((dOnly(g.due) - today)/dayMs), need = g.target - b;
+  return days < 0 ? need : Math.ceil(need / Math.max(1, Math.ceil(days / 30.44)));
+}
 function goalPlan(g, b){
   if(g.target && b >= g.target) return 'ครบเป้าแล้ว 🎉';
   if(!g.due) return g.target ? `ขาดอีก <b>${yen(g.target - b)}</b>` : 'ไม่ได้ตั้งเป้า';
@@ -1521,6 +1540,10 @@ function renderSetBody(){
     <select class="f" id="setDay">${Array.from({length:28}, (_,i) => `<option value="${i+1}"${st.cycle_start_day == i+1 ? ' selected' : ''}>${i === 0 ? 'วันที่ 1 (ตามเดือนปฏิทิน)' : 'วันที่ ' + (i+1)}</option>`).join('')}</select>
     <p class="hint">รอบปัจจุบัน ${k}: ${cycleTitle(k)} · รอบตั้งชื่อตามเดือนที่รอบสิ้นสุด</p>
 
+    <hr><h2>เครื่องคิดเลขแบ่งเงิน</h2>
+    <p class="hint">ใส่รายรับต่อเดือน แล้วเลือกสูตรแบ่ง เพื่อดูว่าควรใช้และเก็บประมาณเท่าไร เป็นแค่ตัวช่วยคิด ไม่ได้ตั้งเป็นงบในแอป</p>
+    <div class="calc" id="calc">${calcForm()}</div>
+
     <hr><h2>กระเป๋าเงิน</h2>
     <ul class="sl">${vis.map((w,i) => `<li><span class="nm">${esc(w.name)} ${tag(w)}<small>${yen(wBal(w, D))}${w.opening ? ' · ยอดยกมา ' + yen(w.opening) : ''}</small></span>
       <span class="acts">${updown('wallets', w, i, vis.length)}<button class="icon" data-wed="${esc(w.id)}" aria-label="แก้ไข">✏️</button></span></li>`).join('') || '<li><span class="hint">ยังไม่มีกระเป๋า</span></li>'}</ul>
@@ -1538,6 +1561,7 @@ function renderSetBody(){
     <label class="l" for="setFeeC">ค่าธรรมเนียมตอนย้ายเงิน นับเข้าหมวด</label>
     <select class="f" id="setFeeC"><option value="">ยังไม่ได้เลือก</option>${leafCats().concat(visM.filter(m => subsOf(m.id).length)).map(c => `<option value="${esc(c.id)}"${st.transfer_fee_category === c.id ? ' selected' : ''}>${esc(catLabel(c.id))}</option>`).join('')}</select>
     <p class="hint">เช่น ค่ากด ATM ตอนกดเงินสด · ค่าธรรมเนียมของรายจ่ายทั่วไปนับรวมในหมวดของรายการนั้นเอง</p>`;
+  moneyBox($('#calcInc')); renderCalc();
 }
 const setQ = (key, v) => { const base = cfg() ? cfg().settings[key] : undefined; if(String(base) === String(v)) delete db.q.settings[key]; else db.q.settings[key] = v; persist(); renderAll(); };
 $('#setBody').addEventListener('change', e => {
@@ -1626,6 +1650,51 @@ $('#caDel').onclick = () => {
     persist(); closeM('#mCat'); renderAll();
   }, used || subs.length ? 'ซ่อน' : 'ลบ');
 };
+/* ---------- split calculator: kept on this phone only, never sent to the sheet ---------- */
+const RULES = [['503020', 'สมดุล', [50,30,20]], ['602020', 'ค่าครองชีพสูง', [60,20,20]], ['701020', 'เริ่มเก็บทีละนิด', [70,20,10]],
+  ['403030', 'เน้นเก็บ', [40,30,30]], ['custom', 'กำหนดเอง', null]];
+const PARTS = [['จำเป็น', 'ค่าเช่า บิล ของสด เดินทาง ประกัน', 'var(--s1)'], ['ใช้ตามใจ', 'กินข้างนอก ส่วนตัว เที่ยว', 'var(--s2)'], ['เก็บ', 'ใส่กระปุก เงินฉุกเฉิน', 'var(--s3)']];
+const plan = () => Object.assign({income:0, rule:'503020', pcts:[50,30,20]}, db.plan || {});
+const pctsOf = p => p.rule === 'custom' ? p.pcts : RULES.find(r => r[0] === p.rule)[2];
+function calcForm(){
+  const p = plan(), k = curKey(), D = localDelta(), inc = incomeOf(k, D) || incomeOf(shiftKey(k, -1), D);
+  return `<label class="l" for="calcInc" style="margin-top:0">รายรับต่อเดือน</label>
+    <div class="amt"><span>¥</span><input id="calcInc" inputmode="numeric" placeholder="0" value="${p.income ? fmtNum(p.income) : ''}" aria-label="รายรับต่อเดือน"></div>
+    ${inc ? `<div class="bar2"><button type="button" class="btn sm" id="calcUse" data-v="${inc}">ใช้รายรับที่บันทึกไว้ ${yen(inc)}</button></div>` : ''}
+    <label class="l">สูตรแบ่ง (จำเป็น / ใช้ตามใจ / เก็บ)</label>
+    <div class="chips" id="calcRules">${RULES.map(([id, n, v]) => `<button type="button" class="chip${p.rule === id ? ' on' : ''}" data-rule="${id}">${v ? v.join('/') + ' · ' : ''}${n}</button>`).join('')}</div>
+    <div class="pc" id="calcPc"${p.rule === 'custom' ? '' : ' hidden'}>${PARTS.map(([n], i) => `<div><label for="calcP${i}">${n} %</label><input id="calcP${i}" inputmode="numeric" value="${p.pcts[i]}"></div>`).join('')}</div>
+    <div id="calcOut"></div>`;
+}
+function renderCalc(){
+  const el = $('#calcOut'); if(!el) return;
+  const p = plan(), pc = pctsOf(p), sum = pc.reduce((x,v) => x + v, 0);
+  if(sum !== 100){ el.innerHTML = `<p class="err">รวมกันได้ ${sum}% ต้องเท่ากับ 100%</p>`; return; }
+  if(!p.income){ el.innerHTML = '<p class="hint">ใส่รายรับเพื่อดูผล</p>'; return; }
+  // the needs part takes the rounding remainder, so the three parts always add up to the income
+  const amt = pc.map(v => Math.floor(p.income * v / 100)); amt[0] += p.income - amt.reduce((x,v) => x + v, 0);
+  const D = localDelta(), monthly = activeG().reduce((x,g) => x + goalMonthly(g, gBal(g, D)), 0);
+  const pk = shiftKey(curKey(), -1), spentPrev = totalSpend(pk, D);
+  el.innerHTML = `<div class="stack">${pc.map((v,i) => `<i style="width:${v}%;background:${PARTS[i][2]}"></i>`).join('')}</div>
+    <div class="split">${PARTS.map(([n, ex, c], i) => `<div class="sp" style="--c:${c}"><div class="top"><span>${n} ${pc[i]}%</span><b>${yen(amt[i])}</b></div><small>${ex}</small></div>`).join('')}</div>
+    ${monthly ? `<p class="hint">กระปุกที่ตั้งวันที่ไว้ ต้องใส่รวมเดือนละ ${yen(monthly)} · ${monthly <= amt[2] ? `ส่วน "เก็บ" ${yen(amt[2])} พอ เหลืออีก ${yen(amt[2] - monthly)} สำหรับกระปุกอื่น` : `มากกว่าส่วน "เก็บ" อยู่ ${yen(monthly - amt[2])}`}</p>` : ''}
+    ${spentPrev ? `<p class="hint">รอบก่อนใช้จ่ายจริงตามหมวด ${yen(spentPrev)} (${Math.round(spentPrev / p.income * 100)}% ของรายรับนี้)</p>` : ''}`;
+}
+function savePlan(ch){ db.plan = Object.assign(plan(), ch); persist(); renderCalc(); }
+$('#setBody').addEventListener('input', e => {
+  if(e.target.id === 'calcInc') savePlan({income: parseAmt(e.target.value) || 0});
+  const m = /^calcP(\d)$/.exec(e.target.id);
+  if(m){ const pcts = plan().pcts.slice(); pcts[+m[1]] = parseAmt(e.target.value) || 0; savePlan({pcts}); }
+});
+$('#setBody').addEventListener('click', e => {
+  const r = e.target.closest('[data-rule]');
+  if(r){ const ch = {rule:r.dataset.rule}; if(r.dataset.rule === 'custom' && plan().rule !== 'custom') ch.pcts = pctsOf(plan()).slice();
+    savePlan(ch); $$('#calcRules .chip').forEach(c => c.classList.toggle('on', c === r)); $('#calcPc').hidden = r.dataset.rule !== 'custom';
+    PARTS.forEach((_, i) => $('#calcP' + i).value = plan().pcts[i]); return; }
+  const u = e.target.closest('#calcUse');
+  if(u){ const v = Number(u.dataset.v); $('#calcInc').value = fmtNum(v); savePlan({income:v}); }
+});
+
 /* a ready-made start the user edits afterwards */
 function starter(){
   const W = [['เงินสด'], ['ゆうちょ'], ['PayPay'], ['Rakuten Pay'], ['Co-op']];

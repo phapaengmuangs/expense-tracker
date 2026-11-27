@@ -2,7 +2,7 @@
 // The page itself is fetched network-first, so a new version shows on the next open;
 // the cached copy is used only when there is no connection. Icons and the manifest are
 // served cache-first. Bump VERSION when shipping, so old caches are cleared.
-const VERSION = 'paynote-v12';
+const VERSION = 'paynote-v13';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
