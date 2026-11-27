@@ -1287,7 +1287,18 @@ $('#stClear').onclick = () => {
 persist();                       // store the migrated shape right away
 renderAll();
 if(sheetOn()) pull(true);
-if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+/* Offline support. When a newer version takes over, reload once so it shows right away.
+   Entries live in localStorage, so a reload never loses anything. */
+if('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:'){
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(hadController && !reloaded && !$('.modal.on')){ reloaded = true; location.reload(); }
+  });
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    document.addEventListener('visibilitychange', () => { if(!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+}
 }
 </script>
 </body>
