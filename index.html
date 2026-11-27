@@ -162,7 +162,12 @@ ul.list li.dayh{background:var(--card);border-bottom:1px solid var(--rule);paddi
 .err{color:var(--warn);font-size:14px;min-height:20px;margin-top:6px}
 hr{border:0;border-top:1px solid var(--rule);margin:22px 0}
 .dt{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:center;flex:1}
-.dt input{grid-column:1/-1}
+.dt .dpick{grid-column:1/-1}
+/* date shown as DD/MM/YYYY; the native picker sits on top, invisible, so a tap still opens it */
+.dpick{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:1px solid var(--rule);background:var(--card);border-radius:10px;padding:11px 12px;font-size:16px;min-height:46px;font-variant-numeric:tabular-nums;cursor:pointer}
+.dpick::after{content:'📅';font-size:15px}
+.dpick.empty span{color:var(--sub)}
+.dpick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;margin:0}
 .dt select{appearance:none;text-align:center;font-variant-numeric:tabular-nums;width:100%;border:1px solid var(--rule);background:var(--card);border-radius:10px;padding:11px 6px;font-size:16px;min-height:46px}
 .dt b{font-weight:700}
 /* review box */
@@ -245,12 +250,12 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <div id="fFrom"><label class="l" for="inFrom" id="fFromL">จ่ายจาก</label><select class="f" id="inFrom"></select></div>
       <div id="fTo"><label class="l" for="inTo" id="fToL">ไปกระเป๋า</label><select class="f" id="inTo"></select></div>
       <div class="amtbox"><label for="inAmt">จำนวนเงิน</label>
-        <div class="amt"><span>¥</span><input id="inAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div></div>
+        <div class="amt"><span>¥</span><input id="inAmt" inputmode="numeric" placeholder="0" aria-label="จำนวนเงิน"></div></div>
       <div id="fFeeW">
         <button type="button" class="btn sm" id="feeToggle" style="margin-top:8px">＋ ค่าธรรมเนียม</button>
         <div id="feeBox" hidden>
           <label class="l" for="inFee">ค่าธรรมเนียม</label>
-          <div class="row"><input class="f" id="inFee" inputmode="numeric" pattern="[0-9]*" placeholder="เช่น 110"><button type="button" class="btn sm" id="feeOff">เอาออก</button></div>
+          <div class="row"><input class="f" id="inFee" inputmode="numeric" placeholder="เช่น 110"><button type="button" class="btn sm" id="feeOff">เอาออก</button></div>
           <p class="hint" id="feeHint"></p>
         </div>
       </div>
@@ -363,7 +368,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
     <label class="l" for="rcAcc">กระเป๋า</label>
     <select class="f" id="rcAcc"></select>
     <label class="l" for="rcReal">ยอดจริงที่เห็นในแอปหรือในกระเป๋า</label>
-    <div class="amt"><span>¥</span><input id="rcReal" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="ยอดจริง"></div>
+    <div class="amt"><span>¥</span><input id="rcReal" inputmode="numeric" placeholder="0" aria-label="ยอดจริง"></div>
     <div class="lineinfo" id="rcDiff" hidden></div>
     <div id="rcWhy" hidden>
       <label class="l">ส่วนต่างนี้คืออะไร</label>
@@ -386,8 +391,8 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
   <div class="sheet">
     <h1 id="edT">แก้ไขรายการ</h1>
     <form id="fEd" autocomplete="off">
-      <div class="amt"><span>¥</span><input id="edAmt" inputmode="numeric" pattern="[0-9]*" aria-label="จำนวนเงิน"></div>
-      <div id="edFeeW"><label class="l" for="edFee">ค่าธรรมเนียม (เว้นว่าง = ไม่มี)</label><input class="f" id="edFee" inputmode="numeric" pattern="[0-9]*" placeholder="0"></div>
+      <div class="amt"><span>¥</span><input id="edAmt" inputmode="numeric" aria-label="จำนวนเงิน"></div>
+      <div id="edFeeW"><label class="l" for="edFee">ค่าธรรมเนียม (เว้นว่าง = ไม่มี)</label><input class="f" id="edFee" inputmode="numeric" placeholder="0"></div>
       <div id="edCatW"><label class="l" for="edCat">หมวด</label><select class="f" id="edCat"></select></div>
       <div id="edGoalW"><label class="l" for="edGoal">กระปุก</label><select class="f" id="edGoal"></select></div>
       <div id="edFromW"><label class="l" for="edFrom" id="edFromL">จ่ายจาก</label><select class="f" id="edFrom"></select></div>
@@ -410,12 +415,12 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <label class="l" for="goName">ชื่อกระปุก</label>
       <input class="f" id="goName" maxlength="60" placeholder="เช่น ย้ายห้อง, ทริปเกะโระ, เงินฉุกเฉิน">
       <label class="l" for="goTarget">เป้าหมาย</label>
-      <div class="amt"><span>¥</span><input id="goTarget" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="เป้าหมาย"></div>
+      <div class="amt"><span>¥</span><input id="goTarget" inputmode="numeric" placeholder="0" aria-label="เป้าหมาย"></div>
       <label class="l" for="goDue">อยากได้ภายในวันที่ (ไม่บังคับ)</label>
-      <div class="row"><input class="f" type="date" id="goDue"><button type="button" class="btn sm" id="goDueClear">ไม่กำหนด</button></div>
+      <div class="row"><label class="dpick"><span></span><input type="date" id="goDue" aria-label="วันที่เป้าหมาย"></label><button type="button" class="btn sm" id="goDueClear">ไม่กำหนด</button></div>
       <p class="hint">ถ้าใส่วันที่ แอปจะบอกว่าต้องใส่เงินเดือนละเท่าไรถึงจะทัน</p>
       <div id="goStartW"><label class="l" for="goStart">ใส่เงินเริ่มต้นเลย (ไม่บังคับ)</label>
-        <div class="amt"><span>¥</span><input id="goStart" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="เงินเริ่มต้น"></div>
+        <div class="amt"><span>¥</span><input id="goStart" inputmode="numeric" placeholder="0" aria-label="เงินเริ่มต้น"></div>
         <p class="hint" id="goStartHint"></p></div>
       <div id="goEndW" class="bar2" hidden><button type="button" class="btn warn" id="goClose">ปิดกระปุกนี้</button><button type="button" class="btn warn" id="goDel">ลบกระปุก</button></div>
       <div class="err" id="goErr" role="alert"></div>
@@ -430,7 +435,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
     <h1 id="mvT">ใส่เงินเข้ากระปุก</h1>
     <div class="lineinfo" id="mvInfo"></div>
     <div class="amtbox"><label for="mvAmt">จำนวนเงิน</label>
-      <div class="amt"><span>¥</span><input id="mvAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div></div>
+      <div class="amt"><span>¥</span><input id="mvAmt" inputmode="numeric" placeholder="0" aria-label="จำนวนเงิน"></div></div>
     <p class="hint" id="mvHint"></p>
     <label class="l" for="mvNote">หมายเหตุ (ไม่บังคับ)</label>
     <input class="f" id="mvNote" placeholder="เช่น เก็บจากทุนเดือนนี้">
@@ -528,16 +533,46 @@ const dayMs = 864e5;
 const spendOf = it => it.type === 'expense' || it.type === 'goal_pay' ? it.amount : it.type === 'transfer' ? (it.fee || 0) : 0;
 const isMove = it => !spendOf(it);
 
+/* Dates read DD/MM/YYYY everywhere, whatever the phone's own date format */
+const dmy = v => { if(!v) return ''; const [y,m,d] = v.split('-'); return `${d}/${m}/${y}`; };
+function syncDate(inp){ const box = inp.closest('.dpick'); if(!box) return; box.querySelector('span').textContent = dmy(inp.value) || inp.dataset.empty || 'เลือกวันที่'; box.classList.toggle('empty', !inp.value); }
+function dateBox(inp, emptyText){
+  if(emptyText) inp.dataset.empty = emptyText;
+  ['input','change'].forEach(ev => inp.addEventListener(ev, () => syncDate(inp)));
+  inp.addEventListener('click', () => { try{ inp.showPicker && inp.showPicker(); }catch(e){} });
+  syncDate(inp);
+}
+const setDate = (inp, v) => { inp.value = v || ''; syncDate(inp); };
+
+/* Money fields put in thousands separators as you type, keeping the cursor after the same digit */
+const fmtNum = n => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('en-US');
+function moneyBox(inp, signed){
+  inp.addEventListener('input', () => {
+    const v = inp.value, pos = inp.selectionStart ?? v.length;
+    const digitsBefore = v.slice(0, pos).replace(/\D/g, '').length;
+    const neg = signed && /^\s*-/.test(v), digits = v.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    const out = (neg ? '-' : '') + (digits ? Number(digits).toLocaleString('en-US') : '');
+    if(out === v) return;
+    inp.value = out;
+    let i = 0, seen = 0;
+    while(i < out.length && seen < digitsBefore){ if(/\d/.test(out[i])) seen++; i++; }
+    if(neg && digitsBefore === 0) i = 1;
+    try{ inp.setSelectionRange(i, i); }catch(e){}
+  });
+}
+const setMoney = (inp, n) => { inp.value = n === '' || n == null ? '' : fmtNum(n); };
+
 /* 24-hour picker: date + hour (00–23) + minute (00–59), independent of the phone's AM/PM setting */
 const opts = n => Array.from({length:n}, (_,i) => `<option value="${pad(i)}">${pad(i)}</option>`).join('');
 function mountDT(el, onChange){
   const id = el.id;
-  el.innerHTML = `<input class="f" type="date" id="${id}-d" aria-label="วันที่">
+  el.innerHTML = `<label class="dpick"><span></span><input type="date" id="${id}-d" aria-label="วันที่"></label>
     <select id="${id}-h" aria-label="ชั่วโมง">${opts(24)}</select><b>:</b>
     <select id="${id}-m" aria-label="นาที">${opts(60)}</select>`;
+  dateBox($('#'+id+'-d'));
   if(onChange) el.addEventListener('input', onChange);
 }
-function setDT(el, ts){ const [d,t] = ts.split('T'); $('#'+el.id+'-d').value = d; $('#'+el.id+'-h').value = t.slice(0,2); $('#'+el.id+'-m').value = t.slice(3,5); }
+function setDT(el, ts){ const [d,t] = ts.split('T'); setDate($('#'+el.id+'-d'), d); $('#'+el.id+'-h').value = t.slice(0,2); $('#'+el.id+'-m').value = t.slice(3,5); }
 function getDT(el){ const d = $('#'+el.id+'-d').value; return d ? `${d}T${$('#'+el.id+'-h').value}:${$('#'+el.id+'-m').value}` : ''; }
 
 let toastTimer;
@@ -1209,14 +1244,17 @@ function openGoal(id){
   const g = id ? gOf(id) : null; goalEdit = g ? g.id : null;
   $('#goT').textContent = g ? 'แก้ไขกระปุก' : 'สร้างกระปุก';
   $('#goOk').textContent = g ? (g.status === 'closed' ? 'บันทึกและเปิดใช้อีกครั้ง' : 'บันทึกการแก้ไข') : 'สร้างกระปุก';
-  $('#goName').value = g ? g.name : ''; $('#goTarget').value = g && g.target ? g.target : ''; $('#goDue').value = g ? g.due || '' : '';
+  $('#goName').value = g ? g.name : ''; setMoney($('#goTarget'), g && g.target ? g.target : ''); setDate($('#goDue'), g ? g.due : '');
   $('#goStart').value = ''; $('#goStartW').hidden = !!g; $('#goEndW').hidden = !g; $('#goErr').textContent = '';
   const fm = freeMoney(localDelta());
   $('#goStartHint').textContent = fm ? `ตอนนี้ ${fm.w.name} มีเงินที่ยังไม่ได้แบ่ง ${yen(fm.free)}` : '';
   if(g){ const used = g.used || usedLocal('goals', g.id); $('#goDel').hidden = used; $('#goClose').hidden = used ? g.status === 'closed' : true; }
   openM('#mGoal'); if(!g) $('#goName').focus();
 }
-$('#goDueClear').onclick = () => { $('#goDue').value = ''; };
+$('#goDueClear').onclick = () => setDate($('#goDue'), '');
+dateBox($('#goDue'), 'ไม่กำหนด');
+['#inAmt','#inFee','#edAmt','#edFee','#goTarget','#goStart','#mvAmt'].forEach(id => moneyBox($(id)));
+['#rcReal','#waOpen'].forEach(id => moneyBox($(id), true));
 $('#goCancel').onclick = () => closeM('#mGoal');
 $('#fGoalEd').onsubmit = e => {
   e.preventDefault();
@@ -1409,8 +1447,8 @@ function openEdit(id){
   const it = db.items.find(i => i.id === id); if(!it || !ready()) return;
   editId = id;
   const D = localDelta(), t = it.type, fee = it.fee || 0;
-  $('#edAmt').value = t === 'transfer' ? it.amount : it.amount - fee; $('#edNote').value = it.note || ''; setDT($('#edTime'), it.ts); $('#edErr').textContent = '';
-  $('#edFeeW').hidden = !FEE_TYPES.includes(t); $('#edFee').value = fee || '';
+  setMoney($('#edAmt'), t === 'transfer' ? it.amount : it.amount - fee); $('#edNote').value = it.note || ''; setDT($('#edTime'), it.ts); $('#edErr').textContent = '';
+  $('#edFeeW').hidden = !FEE_TYPES.includes(t); setMoney($('#edFee'), fee || '');
   $('#edCatW').hidden = t !== 'expense';
   const leaves = leafCats(); if(it.cat && !leaves.some(c => c.id === it.cat) && cOf(it.cat)) leaves.push(cOf(it.cat));
   $('#edCat').innerHTML = leaves.map(c => `<option value="${esc(c.id)}"${c.id===it.cat?' selected':''}>${esc(catLabel(c.id))}</option>`).join('');
@@ -1533,7 +1571,7 @@ let walletEdit = null;
 function openWallet(id){
   const w = id ? wOf(id) : null; walletEdit = w ? w.id : null;
   $('#waT').textContent = w ? 'แก้ไขกระเป๋า' : 'เพิ่มกระเป๋าเงิน';
-  $('#waName').value = w ? w.name : ''; $('#waOpen').value = w && w.opening ? w.opening : '';
+  $('#waName').value = w ? w.name : ''; setMoney($('#waOpen'), w && w.opening ? w.opening : '');
   $('#waEndW').hidden = !w; $('#waErr').textContent = '';
   if(w) $('#waDel').textContent = w.used || usedLocal('wallets', w.id) ? 'ซ่อนกระเป๋านี้' : 'ลบกระเป๋านี้';
   openM('#mWallet'); if(!w) $('#waName').focus();
