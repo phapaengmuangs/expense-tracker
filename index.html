@@ -13,7 +13,7 @@
 <style>
 /* VOICE: calm, quick, a till receipt you trust
    IDEA: a receipt roll checked against the household ledger (the Google Sheet)
-   PICTURE: the form itself, with a large ¥ readout and the budget left for the chosen item
+   PICTURE: the form itself, with a large ¥ readout; spending is compared with last cycle, never with a limit
    COLOUR and TYPE: white ground, ink #14161a, one deep teal #0b5d63; IBM Plex Sans Thai
    LAYOUT: one column, bottom tab bar, sticky save button for one-handed use */
 :root{color-scheme:light dark;
@@ -97,8 +97,8 @@ select.f:disabled{opacity:.55}
 .btn:disabled{opacity:.45}
 .save{position:fixed;left:0;right:0;bottom:64px;padding:10px 16px;background:linear-gradient(transparent,var(--bg) 30%);z-index:4}
 .save .btn{display:block;width:100%;max-width:528px;margin:0 auto;font-size:18px;min-height:56px}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;height:64px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1px solid var(--rule);z-index:5}
-nav.tabs button{border:0;background:none;font-size:14px;color:var(--sub);font-weight:500}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;height:64px;display:grid;grid-template-columns:repeat(5,1fr);background:var(--bg);border-top:1px solid var(--rule);z-index:5}
+nav.tabs button{border:0;background:none;font-size:13px;color:var(--sub);font-weight:500;padding:0 2px;line-height:1.25}
 nav.tabs button.on{color:var(--acc);font-weight:700;box-shadow:inset 0 3px 0 var(--acc)}
 .seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--card);border-radius:12px;padding:4px;margin-bottom:10px}
 .seg button{min-height:44px;border:0;border-radius:9px;background:none;font-weight:600;font-size:14px;color:var(--sub);line-height:1.2}
@@ -114,8 +114,20 @@ nav.tabs button.on{color:var(--acc);font-weight:700;box-shadow:inset 0 3px 0 var
 .lineinfo small{color:var(--sub);font-size:13px}
 .meter{height:10px;background:var(--rule);border-radius:5px;overflow:hidden;margin:6px 0 2px}
 .meter i{display:block;height:100%;background:var(--acc);border-radius:5px}
-.meter.over i{background:var(--warn)}
-.meter.warnish i{background:var(--amber)}
+.meter.full i{background:var(--amber)}
+.cmp{font-size:12px;color:var(--sub);white-space:nowrap}
+/* goals */
+.goal{background:var(--card);border-radius:14px;padding:14px;margin:12px 0}
+.goal .gh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.goal .gh b{font-size:17px}
+.goal .gv{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.goal .gv small{font-size:14px;font-weight:500;color:var(--sub)}
+.goal .meter{height:12px;border-radius:6px}
+.goal .gs{font-size:13px;color:var(--sub);margin-top:4px}
+.goal .gs b{color:var(--ink);font-variant-numeric:tabular-nums}
+.goal .ga{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;margin-top:10px}
+.goal .ga .btn{min-height:42px;padding:4px 8px;font-size:14px}
+.goal.closed{opacity:.7}
 .over-t{color:var(--warn);font-weight:600}
 .bars{margin-top:10px;display:grid;gap:6px}
 .bar{display:grid;grid-template-columns:7.5em minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
@@ -219,8 +231,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <div id="fPreset" class="chips" style="margin-top:14px"></div>
       <div id="fFrom"><label class="l" for="inFrom" id="fFromL">จ่ายจาก</label><select class="f" id="inFrom"></select></div>
       <div id="fTo"><label class="l" for="inTo">ไปบัญชี</label><select class="f" id="inTo"></select></div>
-      <div id="fEvent"><label class="l" for="inEvent">เหตุการณ์ตามแผน (ไม่บังคับ)</label><select class="f" id="inEvent"></select></div>
-      <div id="fFund"><label class="l" for="inFund" id="fFundL">กอง</label><select class="f" id="inFund"></select></div>
+      <div id="fFund"><label class="l" for="inFund" id="fFundL">กระปุก</label><select class="f" id="inFund"></select></div>
       <div class="amtbox"><label for="inAmt">จำนวนเงิน</label>
         <div class="amt"><span>¥</span><input id="inAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div></div>
       <div id="fFeeW">
@@ -247,8 +258,15 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
   <!-- ============ DASHBOARD ============ -->
   <section id="v-dash" class="view" aria-label="ภาพรวม">
     <h1>ภาพรวม</h1>
-    <div class="card need" hidden><p>เชื่อมต่อ Google Sheet ที่แท็บตั้งค่า เพื่อดูงบคงเหลือ ยอดบัญชี และกองเงิน</p><button class="btn pri goSet">ไปที่ตั้งค่า</button></div>
+    <div class="card need" hidden><p>เชื่อมต่อ Google Sheet ที่แท็บตั้งค่า เพื่อดูว่าเงินไปทางไหน และยอดแต่ละบัญชี</p><button class="btn pri goSet">ไปที่ตั้งค่า</button></div>
     <div id="dash"></div>
+  </section>
+
+  <!-- ============ GOALS ============ -->
+  <section id="v-goal" class="view" aria-label="กระปุก">
+    <h1>กระปุกเป้าหมาย</h1>
+    <div class="card need" hidden><p>เชื่อมต่อ Google Sheet ที่แท็บตั้งค่าก่อน แล้วสร้างกระปุกได้เลย</p><button class="btn pri goSet">ไปที่ตั้งค่า</button></div>
+    <div id="goals"></div>
   </section>
 
   <!-- ============ HISTORY ============ -->
@@ -273,7 +291,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <button class="btn pri" id="shConnect">บันทึกและเชื่อมต่อ</button>
       <button class="btn" id="shPull">รีเฟรชข้อมูลจากชีต</button>
     </div>
-    <p class="hint">บัญชี รายการงบ และกองเงิน มาจากชีต ถ้าจะเพิ่มบัญชีใหม่ ให้เพิ่มแถวในแท็บ Accounts แล้วกดรีเฟรช</p>
+    <p class="hint">บัญชีและหมวดมาจากชีต ถ้าจะเพิ่มบัญชีหรือหมวดใหม่ ให้เพิ่มแถวในแท็บ Accounts หรือ Categories แล้วกดรีเฟรช · กระปุกสร้างและแก้ได้ในแท็บกระปุก</p>
     <hr>
     <div class="sum" id="stInfo"></div>
     <label class="l">สำรองข้อมูลในเครื่อง</label>
@@ -297,6 +315,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
 <nav class="tabs" role="tablist">
   <button data-v="input" class="on">📝 บันทึก</button>
   <button data-v="dash">📊 ภาพรวม</button>
+  <button data-v="goal">🐷 กระปุก</button>
   <button data-v="hist">📅 ประวัติ</button>
   <button data-v="set">⚙️ ตั้งค่า</button>
 </nav>
@@ -356,11 +375,10 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
     <h1 id="edT">แก้ไขรายการ</h1>
     <form id="fEd" autocomplete="off">
       <div class="amt"><span>¥</span><input id="edAmt" inputmode="numeric" pattern="[0-9]*" aria-label="จำนวนเงิน"></div>
-      <div id="edLineW"><label class="l" for="edLine">รายการงบ</label><select class="f" id="edLine"></select></div>
+      <div id="edLineW"><label class="l" for="edLine">หมวด</label><select class="f" id="edLine"></select></div>
       <div id="edFromW"><label class="l" for="edFrom" id="edFromL">จ่ายจาก</label><select class="f" id="edFrom"></select></div>
       <div id="edToW"><label class="l" for="edTo">ไปบัญชี</label><select class="f" id="edTo"></select></div>
-      <div id="edFundW"><label class="l" for="edFund">กอง</label><select class="f" id="edFund"></select></div>
-      <div id="edEventW"><label class="l" for="edEvent">เหตุการณ์ตามแผน</label><select class="f" id="edEvent"></select></div>
+      <div id="edFundW"><label class="l" for="edFund">กระปุก</label><select class="f" id="edFund"></select></div>
       <div id="edFeeW"><label class="l" for="edFee">ค่าธรรมเนียม (เว้นว่าง = ไม่มี)</label><input class="f" id="edFee" inputmode="numeric" pattern="[0-9]*" placeholder="0"><p class="hint" id="edFeeHint"></p></div>
       <label class="l" for="edNote">หมายเหตุ</label>
       <input class="f" id="edNote">
@@ -369,6 +387,42 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <div class="err" id="edErr" role="alert"></div>
       <div class="bar2"><button type="button" class="btn" id="edCancel" style="flex:1">ยกเลิก</button><button class="btn pri" style="flex:2">บันทึกการแก้ไข</button></div>
     </form>
+  </div>
+</div>
+
+<!-- create or edit a goal -->
+<div class="modal" id="mGoal" role="dialog" aria-modal="true" aria-labelledby="goT">
+  <div class="sheet">
+    <h1 id="goT">สร้างกระปุก</h1>
+    <form id="fGoal" autocomplete="off">
+      <label class="l" for="goName">ชื่อกระปุก</label>
+      <input class="f" id="goName" maxlength="60" placeholder="เช่น iPad, ทริปโอกินาวา, เงินฉุกเฉิน">
+      <label class="l" for="goTarget">เป้าหมาย</label>
+      <div class="amt"><span>¥</span><input id="goTarget" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="เป้าหมาย"></div>
+      <label class="l" for="goDue">อยากได้ภายในวันที่ (ไม่บังคับ)</label>
+      <div class="row"><input class="f" type="date" id="goDue"><button type="button" class="btn sm" id="goDueClear">ไม่กำหนด</button></div>
+      <p class="hint">ถ้าใส่วันที่ แอปจะบอกว่าต้องใส่เงินเดือนละเท่าไรถึงจะทัน</p>
+      <div id="goStartW"><label class="l" for="goStart">ใส่เงินเริ่มต้นเลย (ไม่บังคับ)</label>
+        <div class="amt"><span>¥</span><input id="goStart" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="เงินเริ่มต้น"></div>
+        <p class="hint">เงินยังอยู่ใน ゆうちょ เหมือนเดิม กระปุกแค่แบ่งไว้ว่าเงินก้อนนี้มีไว้ทำอะไร</p></div>
+      <div id="goCloseW" class="bar2" hidden><button type="button" class="btn warn" id="goClose">ปิดกระปุกนี้</button></div>
+      <div class="err" id="goErr" role="alert"></div>
+      <div class="bar2"><button type="button" class="btn" id="goCancel" style="flex:1">ยกเลิก</button><button class="btn pri" id="goOk" style="flex:2">สร้างกระปุก</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- put money in or take it out of a goal -->
+<div class="modal" id="mMove" role="dialog" aria-modal="true" aria-labelledby="mvT">
+  <div class="sheet">
+    <h1 id="mvT">ใส่เงินเข้ากระปุก</h1>
+    <div class="lineinfo" id="mvInfo"></div>
+    <div class="amtbox"><label for="mvAmt">จำนวนเงิน</label>
+      <div class="amt"><span>¥</span><input id="mvAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div></div>
+    <label class="l" for="mvNote">หมายเหตุ (ไม่บังคับ)</label>
+    <input class="f" id="mvNote" placeholder="เช่น เก็บจากทุนเดือนนี้">
+    <div class="err" id="mvErr" role="alert"></div>
+    <div class="bar2"><button type="button" class="btn" id="mvCancel" style="flex:1">ยกเลิก</button><button type="button" class="btn pri" id="mvOk" style="flex:2">ตรวจรายการก่อนบันทึก</button></div>
   </div>
 </div>
 
@@ -384,11 +438,12 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
 /* ================= Storage =================
    Entries are kept on the phone first. Nothing goes to the sheet until the user reviews
    the queue and confirms. Each entry remembers what the sheet last received (`synced`),
-   so remaining budgets and balances stay right while edits and deletes are waiting. */
+   so spending, balances and goals stay right while edits and deletes are waiting.
+   Goal (กระปุก) changes wait in `goalQ` the same way and go up in the same push. */
 const KEY = 'expenseTracker.v5';
-const SCHEMA = 2;
-const TYPES = [['expense','จ่าย'],['transfer','ย้ายเงิน'],['income','รับเงิน'],['one_time','จ่ายจากกอง']];
-const TYPE_NAME = Object.assign(Object.fromEntries(TYPES), {adjust:'ปรับยอด'});
+const SCHEMA = 3;
+const TYPES = [['expense','จ่าย'],['transfer','ย้ายเงิน'],['income','รับเงิน'],['one_time','จ่ายจากกระปุก']];
+const TYPE_NAME = Object.assign(Object.fromEntries(TYPES), {adjust:'ปรับยอด', fund_move:'กระปุก'});
 const TRANSFER_PRESETS = [
   {name:'กดเงินสด', from:'yucho', to:'cash'}, {name:'เติม Co-op', from:'cash', to:'coop'},
   {name:'ชาร์จ Rakuten Pay', from:'cash', to:'rakutenpay'}, {name:'เติม PayPay', from:'yucho', to:'paypay'}];
@@ -396,10 +451,16 @@ const TRANSFER_PRESETS = [
 let db = load();
 function load(){
   try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.items)) return migrate(d); }catch(e){}
-  return {schemaVersion:SCHEMA, items:[], sheet:null};
+  return {schemaVersion:SCHEMA, items:[], sheet:null, goalQ:{}};
 }
 function migrate(d){
   if(d.schemaVersion === SCHEMA) return d;
+  if(d.schemaVersion !== 2) d = migrate1(d);
+  // version 3 drops planned events (the sheet no longer has them) and adds the goal queue
+  d.items.forEach(i => { i.eventId = ''; if(i.synced) i.synced.eventId = ''; });
+  return {schemaVersion:SCHEMA, items:d.items, sheet:d.sheet, goalQ:{}};
+}
+function migrate1(d){
   // version 1 also held Gemini-era entries without a type; only sheet entries carry over
   const snap = i => ({type:i.type, lineId:i.lineId||'', amount:i.amount, ts:i.ts, from:i.from||'', to:i.to||'', fromFund:i.fromFund||'', toFund:i.toFund||'', eventId:i.eventId||''});
   const items = d.items.filter(i => i.type).map(i => {
@@ -412,7 +473,7 @@ function migrate(d){
   });
   const s = d.sheet && d.sheet.url ? {url:d.sheet.url, token:d.sheet.token || '', config:d.sheet.config || null,
     deletes:(d.sheet.deletes || []).map(x => typeof x === 'string' ? {id:x} : x), lastSync:d.sheet.lastSync || null, lastError:''} : null;
-  return {schemaVersion:SCHEMA, items, sheet:s};
+  return {schemaVersion:2, items, sheet:s};
 }
 function persist(){
   try{ localStorage.setItem(KEY, JSON.stringify(db)); return true; }
@@ -433,9 +494,10 @@ const TH_MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','�
 const fmtDT = s => { const d = parseTs(s); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const fmtDay = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)} (${DOW[d.getDay()]})`;
 const parseAmt = v => { const s = String(v).replace(/[,\s¥]/g,''); return /^\d+$/.test(s) ? parseInt(s,10) : NaN; };
-const isMove = it => it.type === 'transfer' || it.type === 'income' || it.type === 'adjust';     // not spending
+const isMove = it => it.type === 'transfer' || it.type === 'income' || it.type === 'adjust' || it.type === 'fund_move';     // not spending
 const dayMs = 864e5;
 const dOnly = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const fmtDate = s => { const d = dOnly(s); return `${d.getDate()} ${TH_MON[d.getMonth()]} ${d.getFullYear()}`; };
 
 /* 24-hour picker: date + hour (00–23) + minute (00–59), independent of the phone's AM/PM setting */
 const opts = n => Array.from({length:n}, (_,i) => `<option value="${pad(i)}">${pad(i)}</option>`).join('');
@@ -478,45 +540,61 @@ function cycleKeyOf(ts){
 }
 const accList = () => cfg() ? cfg().accounts : [];
 const accName = id => (accList().find(a => a.id === id) || {}).name || id || '';
-const fundName = id => ((cfg() && cfg().funds) || []).find(f => f.id === id)?.name || id || '';
+/* Goals as the sheet has them, with the changes still waiting in goalQ laid over the top */
+function goals(){
+  const list = ((cfg() && cfg().funds) || []).map(f => ({...f}));
+  Object.values(db.goalQ || {}).forEach(q => {
+    const f = list.find(x => x.id === q.id);
+    if(f) Object.assign(f, {name:q.name, target:q.target, due:q.due, status:q.status, queued:true});
+    else list.push({id:q.id, name:q.name, target:q.target, due:q.due, status:q.status, balance:0, queued:true, isNew:true});
+  });
+  return list;
+}
+const activeGoals = () => goals().filter(g => g.status !== 'closed');
+const fundName = id => goals().find(f => f.id === id)?.name || id || '';
 const lineOf = id => ((cfg() && cfg().lines) || []).find(l => l.id === id);
 const pending = () => db.items.filter(i => i.sync !== 'ok');
-const queueSize = () => pending().length + (db.sheet ? db.sheet.deletes.length : 0);
+const goalPending = () => Object.values(db.goalQ || {});
+const queueSize = () => pending().length + (db.sheet ? db.sheet.deletes.length : 0) + goalPending().length;
 const snapOf = i => ({type:i.type, lineId:i.lineId, amount:i.amount, ts:i.ts, from:i.from, to:i.to, fromFund:i.fromFund, toFund:i.toFund, eventId:i.eventId});
 
 /* What the queued changes will do once the sheet has them: new/edited versions count,
    the version the sheet already holds is taken back out */
 function effect(t, sign, a){
   if(!t) return;
-  if(t.type === 'expense' && t.lineId && cfg() && cycleKeyOf(t.ts) === cfg().cycle.key) a.line[t.lineId] = (a.line[t.lineId] || 0) + sign*t.amount;
+  if(t.type === 'expense' && t.lineId && cfg()){
+    const k = cycleKeyOf(t.ts);
+    if(k === cfg().cycle.key) a.line[t.lineId] = (a.line[t.lineId] || 0) + sign*t.amount;
+    else if(cfg().prevCycle && k === cfg().prevCycle.key) a.prev[t.lineId] = (a.prev[t.lineId] || 0) + sign*t.amount;
+  }
   if(t.from && t.type !== 'income') a.acc[t.from] = (a.acc[t.from] || 0) - sign*t.amount;
   if(t.to) a.acc[t.to] = (a.acc[t.to] || 0) + sign*t.amount;
   if(t.fromFund) a.fund[t.fromFund] = (a.fund[t.fromFund] || 0) - sign*t.amount;
   if(t.toFund) a.fund[t.toFund] = (a.fund[t.toFund] || 0) + sign*t.amount;
-  if(t.eventId && sign > 0) a.done.add(t.eventId);
 }
 function localDelta(extra){
-  const a = {line:{}, acc:{}, fund:{}, done:new Set()};
+  const a = {line:{}, prev:{}, acc:{}, fund:{}};
   pending().forEach(i => { effect(i, 1, a); effect(i.synced, -1, a); });
   (db.sheet ? db.sheet.deletes : []).forEach(d => effect(d.synced, -1, a));
   if(extra) [].concat(extra).forEach(x => effect(x, 1, a));
   return a;
 }
 /* A fee is its own row, paired with the entry it belongs to (feeOf / feeId), so every sheet
-   formula keeps summing correctly. A one-time payment's fee comes out of the same fund and event;
-   any other fee goes to the budget item "ค่าธรรมเนียม" from the account the money left. */
+   formula keeps summing correctly. A payment from a goal takes its fee from the same goal;
+   any other fee goes to the category "ค่าธรรมเนียม" from the account the money left. */
 const feeLine = () => ((cfg() && cfg().lines) || []).find(l => l.item === 'ค่าธรรมเนียม');
 const canFee = t => t === 'one_time' || ((t === 'expense' || t === 'transfer' || t === 'income') && !!feeLine());
 function feeFor(main, amount, parentId){
   const base = {type:'expense', lineId: feeLine() ? feeLine().id : '', amount, ts:main.ts, note:'ของ ' + main.category,
     from:'', to:'', fromFund:'', toFund:'', eventId:'', category:'ค่าธรรมเนียม', feeOf:parentId};
-  if(main.type === 'one_time') return {...base, type:'one_time', lineId:'', from:main.from, fromFund:main.fromFund, eventId:main.eventId, category:'ค่าธรรมเนียม · ' + main.category};
+  if(main.type === 'one_time') return {...base, type:'one_time', lineId:'', from:main.from, fromFund:main.fromFund, category:'ค่าธรรมเนียม · ' + main.category};
   if(main.type === 'income') return {...base, from:main.to};
   return {...base, from:main.from};       // expense: same account · transfer: the source account
 }
-const feeWhere = main => main.type === 'one_time' ? `จ่ายจากกอง${fundName(main.fromFund)}เดียวกัน${main.eventId ? ' ผูกเหตุการณ์เดียวกัน' : ''}`
-  : `ลงรายการงบ ค่าธรรมเนียม · จาก${accName(main.type === 'income' ? main.to : main.from) || 'บัญชีที่เลือก'}`;
+const feeWhere = main => main.type === 'one_time' ? `จ่ายจากกระปุก${fundName(main.fromFund) || 'เดียวกัน'}เดียวกัน`
+  : `ลงหมวด ค่าธรรมเนียม · จาก${accName(main.type === 'income' ? main.to : main.from) || 'บัญชีที่เลือก'}`;
 const lineUsed = (l, D) => l.spent + (D.line[l.id] || 0);
+const linePrev = (l, D) => (l.prev || 0) + (D.prev[l.id] || 0);
 const accBal = (a, D) => a.balance + (D.acc[a.id] || 0);
 const fundBal = (f, D) => f.balance + (D.fund[f.id] || 0);
 function lineGroups(){
@@ -524,9 +602,12 @@ function lineGroups(){
   ((cfg() && cfg().lines) || []).forEach(l => (g[l.category] = g[l.category] || []).push(l));
   return g;
 }
-const meter = (used, total) => { const p = total ? used/total : 0;
-  return `<div class="meter ${p > 1 ? 'over' : p > .85 ? 'warnish' : ''}"><i style="width:${Math.min(100, Math.max(0, p*100)).toFixed(1)}%"></i></div>`; };
-const leftTxt = r => (r < 0 ? 'เกินงบ ' : 'เหลือ ') + yen(Math.abs(r));
+/* progress toward a goal the user set; reaching it is good news, never a warning */
+const meter = (have, target) => { const p = target ? have/target : 0;
+  return `<div class="meter${p >= 1 ? ' full' : ''}"><i style="width:${Math.min(100, Math.max(0, p*100)).toFixed(1)}%"></i></div>`; };
+/* this cycle against the last one, in plain words with no judgement */
+const vsPrev = (now, prev) => !prev && !now ? '' : !prev ? 'รอบก่อนไม่มี' : now === prev ? 'เท่ากับรอบก่อน'
+  : (now > prev ? 'มากกว่ารอบก่อน ' : 'น้อยกว่ารอบก่อน ') + yen(Math.abs(now - prev));
 
 /* ================= Tabs ================= */
 let curView = 'input';
@@ -545,17 +626,18 @@ function renderAll(){
   renderSyncBar();
   if(curView === 'input' && r) renderInput();
   if(curView === 'dash') renderDash();
+  if(curView === 'goal') renderGoals();
   if(curView === 'hist') renderHist();
   if(curView === 'set') renderSettings();
 }
 
 /* ================= Input ================= */
-const sx = {type:'expense', cat:'', line:null, from:'', to:'', fund:'', event:'', feeOn:false};
+const sx = {type:'expense', cat:'', line:null, from:'', to:'', fund:'', feeOn:false};
 let timeManual = false;
 const accOpts = (cur, D, skip, blank) => (blank ? `<option value="">${blank}</option>` : '') +
   accList().filter(a => a.id !== skip).map(a => `<option value="${esc(a.id)}"${cur===a.id?' selected':''}>${esc(a.name)} · ${yen(accBal(a, D))}</option>`).join('');
 const fundOpts = (cur, D, blank) => `<option value="">${blank}</option>` +
-  ((cfg() && cfg().funds) || []).map(f => `<option value="${esc(f.id)}"${cur===f.id?' selected':''}>${esc(f.name)} · ${yen(fundBal(f, D))}</option>`).join('');
+  goals().filter(f => f.status !== 'closed' || f.id === cur).map(f => `<option value="${esc(f.id)}"${cur===f.id?' selected':''}>${esc(f.name)} · ${yen(fundBal(f, D))}</option>`).join('');
 
 function renderInput(){
   const c = cfg(), t = sx.type, D = localDelta();
@@ -574,10 +656,7 @@ function renderInput(){
   if(!accList().some(a => a.id === sx.from)) sx.from = '';
   $('#inFrom').innerHTML = accOpts(sx.from, D, '', 'เลือกบัญชี');
   $('#inTo').innerHTML = accOpts(sx.to, D, sx.from, 'เลือกบัญชี');
-  $('#inFund').innerHTML = fundOpts(sx.fund, D, t === 'one_time' ? 'เลือกกอง' : 'ไม่เข้ากอง');
-  const evs = c.events.filter(e => !e.done && !D.done.has(e.id) && (t === 'one_time' ? e.kind === 'จ่าย' : e.kind === 'รับ'));
-  $('#inEvent').innerHTML = '<option value="">ไม่ผูกกับเหตุการณ์</option>' +
-    evs.map(e => `<option value="${esc(e.id)}"${sx.event===e.id?' selected':''}>${esc(e.date)} · ${esc(e.name)} · ${yen(e.amount)}</option>`).join('');
+  $('#inFund').innerHTML = fundOpts(sx.fund, D, t === 'one_time' ? 'เลือกกระปุก' : 'ไม่เข้ากระปุก');
   const presets = t === 'transfer' ? TRANSFER_PRESETS.filter(p => accList().some(a => a.id === p.from) && accList().some(a => a.id === p.to)) : [];
   $('#fPreset').innerHTML = presets.map(p => `<button type="button" class="chip${sx.from===p.from && sx.to===p.to ? ' on' : ''}" data-pf="${p.from}" data-pt="${p.to}">${esc(p.name)}</button>`).join('');
   $('#fPreset').hidden = !presets.length;
@@ -585,21 +664,21 @@ function renderInput(){
   $('#fFrom').hidden = t === 'income';
   $('#fFromL').textContent = t === 'transfer' ? 'จากบัญชี' : 'จ่ายจาก';
   $('#fTo').hidden = !(t === 'transfer' || t === 'income');
-  $('#fEvent').hidden = $('#fFund').hidden = !(t === 'one_time' || t === 'income');
-  $('#fFundL').textContent = t === 'one_time' ? 'จ่ายจากกอง' : 'เข้ากอง (ไม่บังคับ)';
+  $('#fFund').hidden = !(t === 'one_time' || t === 'income');
+  $('#fFundL').textContent = t === 'one_time' ? 'จ่ายจากกระปุก' : 'เข้ากระปุก (ไม่บังคับ)';
   $('#fFeeW').hidden = !canFee(t);
   $('#feeBox').hidden = !sx.feeOn; $('#feeToggle').hidden = !!sx.feeOn;
-  $('#feeHint').textContent = feeWhere({type:t, from:sx.from, to:sx.to, fromFund:sx.fund, eventId:sx.event});
+  $('#feeHint').textContent = feeWhere({type:t, from:sx.from, to:sx.to, fromFund:sx.fund});
   refreshLiveTime();
 }
-/* Leftover for the chosen item, or for the whole main category before an item is chosen */
+/* What has gone to the chosen item (or the whole main category) this cycle, beside last cycle */
 function renderLineInfo(ls, D){
   const box = $('#inLineInfo'), l = lineOf(sx.line), list = l ? [l] : ls;
   box.hidden = !list.length; if(!list.length) return;
-  const budget = list.reduce((x,i) => x + i.budget, 0), used = list.reduce((x,i) => x + lineUsed(i, D), 0), r = budget - used, pct = budget ? used/budget : 0;
-  box.innerHTML = `<small>${l ? esc(l.item) + ' · ปกติจ่ายผ่าน ' + esc(l.channel) : 'ทั้งหมวด ' + esc(sx.cat) + ' (' + list.length + ' รายการ)'}</small>
-    <div class="big2 ${r < 0 ? 'over-t' : ''}">${leftTxt(r)}</div>${meter(used, budget)}
-    <small>ใช้ไป ${yen(used)} จาก ${yen(budget)} (${(pct*100).toFixed(0)}%) ในรอบ ${cfg().cycle.key}</small>`;
+  const used = list.reduce((x,i) => x + lineUsed(i, D), 0), prev = list.reduce((x,i) => x + linePrev(i, D), 0);
+  box.innerHTML = `<small>${l ? esc(l.item) + (l.account ? ' · ปกติจ่ายจาก ' + esc(accName(l.account)) : '') : 'ทั้งหมวด ' + esc(sx.cat) + ' (' + list.length + ' รายการ)'}</small>
+    <div class="big2">รอบนี้ใช้ไป ${yen(used)}</div>
+    <small>รอบก่อนทั้งรอบ ${yen(prev)}${vsPrev(used, prev) ? ' · ตอนนี้' + vsPrev(used, prev) : ''}</small>`;
 }
 function pickLine(id){
   sx.line = id || null;
@@ -623,12 +702,6 @@ const focusAmt = () => { const a = $('#inAmt'); a.scrollIntoView({block:'center'
 $('#inFrom').onchange = e => { sx.from = e.target.value; if(sx.to === sx.from) sx.to = ''; renderInput(); };
 $('#inTo').onchange = e => { sx.to = e.target.value; renderInput(); };
 $('#inFund').onchange = e => { sx.fund = e.target.value; renderInput(); };
-$('#inEvent').onchange = e => {
-  sx.event = e.target.value;
-  const ev = cfg().events.find(x => x.id === sx.event);
-  if(ev){ sx.fund = ev.fund; if(!$('#inAmt').value) $('#inAmt').value = ev.amount; }
-  renderInput();
-};
 $('#feeToggle').onclick = () => { sx.feeOn = true; renderInput(); $('#inFee').focus(); };
 $('#feeOff').onclick = () => { sx.feeOn = false; $('#inFee').value = ''; renderInput(); };
 $('#fPreset').onclick = e => { const b = e.target.closest('[data-pf]'); if(!b) return; sx.from = b.dataset.pf; sx.to = b.dataset.pt; renderInput(); };
@@ -647,7 +720,6 @@ setInterval(() => { if(!timeManual && curView === 'input') refreshLiveTime(); },
 /* Build the entry from the form; returns {item} or {err} */
 function draftFromForm(){
   const amount = parseAmt($('#inAmt').value), ts = getDT($('#inTime')), note = $('#inNote').value.trim(), t = sx.type;
-  const ev = sx.event ? cfg().events.find(x => x.id === sx.event) : null;
   if(!(amount > 0)) return {err:'กรุณากรอกจำนวนเงินเป็นตัวเลขจำนวนเต็มมากกว่า 0'};
   let fee = 0;
   if(sx.feeOn && canFee(t) && $('#inFee').value.trim() !== ''){
@@ -665,11 +737,11 @@ function draftFromForm(){
     Object.assign(it, {from:sx.from, to:sx.to, category:`ย้ายเงิน ${accName(sx.from)} → ${accName(sx.to)}`});
   } else if(t === 'income'){
     if(!sx.to) return {err:'กรุณาเลือกบัญชีที่รับเงิน'};
-    Object.assign(it, {to:sx.to, toFund:sx.fund, eventId:sx.event, category:'รับเงิน ' + (ev ? ev.name : accName(sx.to))});
+    Object.assign(it, {to:sx.to, toFund:sx.fund, category:'รับเงิน ' + accName(sx.to) + (sx.fund ? ' → กระปุก' + fundName(sx.fund) : '')});
   } else {
     if(!sx.from) return {err:'กรุณาเลือกบัญชีที่จ่าย'};
-    if(!sx.fund) return {err:'กรุณาเลือกกองที่จ่าย'};
-    Object.assign(it, {from:sx.from, fromFund:sx.fund, eventId:sx.event, category: ev ? ev.name : 'จ่ายจากกอง ' + fundName(sx.fund)});
+    if(!sx.fund) return {err:'กรุณาเลือกกระปุกที่จ่าย'};
+    Object.assign(it, {from:sx.from, fromFund:sx.fund, category: note || 'จ่ายจากกระปุก ' + fundName(sx.fund)});
   }
   return {item:it, fee};
 }
@@ -687,12 +759,12 @@ function showReview(it, fromForm, fee){
   const feeIt = draftFee ? feeFor(it, draftFee, '') : null;
   const D0 = localDelta(), D1 = localDelta(feeIt ? [it, feeIt] : it);
   const rows = [['ประเภท', TYPE_NAME[it.type]], ['ยอด', `<span class="amtv">${yen(it.amount)}</span>`]];
-  if(it.type === 'expense'){ const l = lineOf(it.lineId); rows.push(['รายการงบ', `${esc(l.category)} · ${esc(l.item)}`]); }
+  if(it.type === 'expense'){ const l = lineOf(it.lineId); rows.push(['หมวด', `${esc(l.category)} · ${esc(l.item)}`]); }
   else rows.push(['รายการ', esc(it.category)]);
   if(it.from) rows.push([it.type === 'transfer' ? 'จากบัญชี' : it.type === 'adjust' ? 'ลดยอดบัญชี' : 'จ่ายจาก', esc(accName(it.from))]);
   if(it.to) rows.push([it.type === 'adjust' ? 'เพิ่มยอดบัญชี' : 'ไปบัญชี', esc(accName(it.to))]);
-  if(it.fromFund) rows.push(['จากกอง', esc(fundName(it.fromFund))]);
-  if(it.toFund) rows.push(['เข้ากอง', esc(fundName(it.toFund))]);
+  if(it.fromFund) rows.push(['จากกระปุก', esc(fundName(it.fromFund))]);
+  if(it.toFund) rows.push(['เข้ากระปุก', esc(fundName(it.toFund))]);
   if(feeIt){
     rows.push(['ค่าธรรมเนียม', `${yen(draftFee)} · ${esc(feeWhere(it))}`]);
     rows.push(['รวมจ่ายทั้งหมด', `<b>${yen(it.amount + draftFee)}</b>`]);
@@ -704,17 +776,17 @@ function showReview(it, fromForm, fee){
   const imp = [];
   if(it.type === 'expense'){
     const l = lineOf(it.lineId);
-    if(cycleKeyOf(it.ts) === cfg().cycle.key) imp.push([`งบ ${l.item}`, `${leftTxt(l.budget - lineUsed(l, D0))} → ${leftTxt(l.budget - lineUsed(l, D1))}`]);
-    else imp.push([`งบ ${l.item}`, `นับในรอบ ${cycleKeyOf(it.ts)} (ไม่ใช่รอบปัจจุบัน)`]);
+    if(cycleKeyOf(it.ts) === cfg().cycle.key) imp.push([`${l.item} รอบนี้`, `${yen(lineUsed(l, D0))} → ${yen(lineUsed(l, D1))}`]);
+    else imp.push([l.item, `นับในรอบ ${cycleKeyOf(it.ts)} (ไม่ใช่รอบปัจจุบัน)`]);
   }
-  if(feeIt && feeIt.type === 'expense'){
-    const fl = feeLine(); if(fl) imp.push([`งบ ${fl.item}`, `${leftTxt(fl.budget - lineUsed(fl, D0))} → ${leftTxt(fl.budget - lineUsed(fl, D1))}`]);
+  if(feeIt && feeIt.type === 'expense' && cycleKeyOf(it.ts) === cfg().cycle.key){
+    const fl = feeLine(); if(fl) imp.push([`${fl.item} รอบนี้`, `${yen(lineUsed(fl, D0))} → ${yen(lineUsed(fl, D1))}`]);
   }
   [it.from, it.to].filter(Boolean).forEach(id => {
     const a = accList().find(x => x.id === id); if(a) imp.push([a.name, `${yen(accBal(a, D0))} → ${yen(accBal(a, D1))}`]);
   });
   [it.fromFund, it.toFund].filter(Boolean).forEach(id => {
-    const f = cfg().funds.find(x => x.id === id); if(f) imp.push([`กอง${f.name}`, `${yen(fundBal(f, D0))} → ${yen(fundBal(f, D1))}`]);
+    const f = goals().find(x => x.id === id); if(f) imp.push([`กระปุก${f.name}`, `${yen(fundBal(f, D0))} → ${yen(fundBal(f, D1))}${f.target ? ' / ' + yen(f.target) : ''}`]);
   });
   $('#rvImpact').innerHTML = imp.map(([k,v]) => `<div><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('');
   $('#rvImpact').hidden = !imp.length;
@@ -731,7 +803,7 @@ $('#rvOk').onclick = () => {
   const saved = draft, savedFee = draftFee; draft = null; draftFee = 0; closeM('#mReview');
   if(draftFromForm_){                     // a wallet check leaves the half-filled form alone
     $('#inAmt').value = ''; $('#inNote').value = ''; $('#inFee').value = ''; sx.feeOn = false;
-    sx.event = ''; if(sx.type !== 'transfer') sx.fund = '';
+    if(sx.type !== 'transfer') sx.fund = '';
     if((lineGroups()[sx.cat] || []).length !== 1) sx.line = null;
   }
   renderAll();
@@ -740,19 +812,20 @@ $('#rvOk').onclick = () => {
 
 /* ================= Sheet sync (only when the user asks) ================= */
 const ERRORS = {unauthorized:'TOKEN ไม่ถูกต้อง', busy:'ชีตกำลังทำงานอยู่ ลองใหม่อีกครั้ง', bad_json:'ข้อมูลที่ส่งเสียหาย', server:'ชีตเกิดข้อผิดพลาด'};
-const REJECT = {bad_line:'รายการงบไม่มีในชีต', bad_from_account:'บัญชีที่จ่ายไม่มีในชีต', bad_to_account:'บัญชีที่รับไม่มีในชีต',
-  bad_account:'บัญชีไม่มีในชีต', same_account:'บัญชีต้นทางกับปลายทางเดียวกัน', bad_fund:'กองไม่มีในชีต', bad_event:'เหตุการณ์ไม่มีในชีต',
+const REJECT = {bad_line:'หมวดไม่มีในชีต (แท็บ Categories)', bad_name:'ชื่อกระปุกไม่ถูกต้อง', bad_target:'เป้าหมายไม่ถูกต้อง', bad_due:'วันที่เป้าหมายไม่ถูกต้อง', bad_status:'สถานะกระปุกไม่ถูกต้อง', bad_from_account:'บัญชีที่จ่ายไม่มีในชีต', bad_to_account:'บัญชีที่รับไม่มีในชีต',
+  bad_account:'บัญชีไม่มีในชีต', same_account:'บัญชีต้นทางกับปลายทางเดียวกัน', bad_fund:'กระปุกไม่มีในชีต',
   bad_amount:'ยอดเงินไม่ถูกต้อง', bad_adjust:'การปรับยอดต้องมีบัญชีเดียว (ชีตยังไม่ได้อัปเดต Apps Script?)', bad_ts:'วันเวลาไม่ถูกต้อง', bad_type:'ประเภทไม่ถูกต้อง', bad_id:'รหัสรายการไม่ถูกต้อง'};
 let busy = false;
 const toPayload = it => ({id:it.id, ts:it.ts, type:it.type, line_id:it.lineId || '', amount:it.amount,
   from_account: it.type === 'income' ? '' : (it.from || ''), to_account:it.to || '', from_fund:it.fromFund || '',
-  to_fund:it.toFund || '', event_id:it.eventId || '', note:it.note || ''});
-async function call(upserts, deletes){
+  to_fund:it.toFund || '', event_id:'', note:it.note || ''});
+const goalPayload = g => ({id:g.id, name:g.name, target:g.target, due:g.due || '', status:g.status});
+async function call(upserts, deletes, funds){
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 30000);
   try{
     const r = await fetch(db.sheet.url, {method:'POST', redirect:'follow', signal:ctl.signal,
       headers:{'Content-Type':'text/plain;charset=utf-8'},        // simple request: no CORS preflight
-      body: JSON.stringify({token:db.sheet.token, upserts, deletes})});
+      body: JSON.stringify({token:db.sheet.token, funds: funds || [], upserts, deletes})});
     const res = await r.json();
     if(!res.ok) throw new Error(ERRORS[res.error] || res.error || 'ชีตไม่ตอบรับ');
     return res;
@@ -760,32 +833,37 @@ async function call(upserts, deletes){
     throw new Error(e.name === 'AbortError' ? 'หมดเวลาเชื่อมต่อ' : e.message === 'Failed to fetch' ? (navigator.onLine ? 'เชื่อมต่อชีตไม่ได้' : 'ออฟไลน์') : e.message);
   }finally{ clearTimeout(tm); }
 }
-/* Read-only refresh: remaining budgets, balances, funds and events */
+/* Read-only refresh: spending so far, balances and goals */
 async function pull(quiet){
   if(!sheetOn() || busy) return;
   busy = true; renderSyncBar();
-  try{ const res = await call([], []); db.sheet.config = res.config; db.sheet.lastSync = new Date().toISOString(); db.sheet.lastError = ''; }
+  try{ const res = await call([], [], []); db.sheet.config = res.config; db.sheet.lastSync = new Date().toISOString(); db.sheet.lastError = ''; }
   catch(e){ db.sheet.lastError = e.message; if(!quiet) toast('⚠️ ' + e.message); }
   busy = false; persist(); renderAll();
 }
 async function push(){
   if(!sheetOn() || busy) return false;
-  const ups = pending(), dels = db.sheet.deletes.slice();
+  const ups = pending(), dels = db.sheet.deletes.slice(), gq = goalPending();
   const sentAt = Object.fromEntries(ups.map(i => [i.id, i.updatedAt]));
+  const goalAt = Object.fromEntries(gq.map(g => [g.id, g.updatedAt]));
   busy = true; renderSyncBar();
   try{
-    const res = await call(ups.map(toPayload), dels.map(d => d.id));
+    const res = await call(ups.map(toPayload), dels.map(d => d.id), gq.map(goalPayload));
     const ok = new Set(res.upserted || []);
+    const gOk = new Set(res.funds || []);
+    gq.forEach(g => { const q = db.goalQ[g.id]; if(q && gOk.has(g.id) && q.updatedAt === goalAt[g.id]) delete db.goalQ[g.id]; });
     ups.forEach(i => {
       // an entry edited while this request was out stays pending for the next push
       if(ok.has(i.id) && i.updatedAt === sentAt[i.id]){ i.sync = 'ok'; i.synced = snapOf(i); delete i.syncError; }
     });
-    (res.rejected || []).forEach(x => { const it = db.items.find(i => i.id === x.id); if(it){ it.sync = 'error'; it.syncError = REJECT[x.error] || x.error; } });
+    (res.rejected || []).forEach(x => {
+      if(x.kind === 'fund'){ const q = db.goalQ[x.id]; if(q) q.error = REJECT[x.error] || x.error; return; }
+      const it = db.items.find(i => i.id === x.id); if(it){ it.sync = 'error'; it.syncError = REJECT[x.error] || x.error; } });
     const delOk = new Set(res.deleted || []);
     db.sheet.deletes = db.sheet.deletes.filter(d => !delOk.has(d.id));
     db.sheet.config = res.config; db.sheet.lastSync = new Date().toISOString(); db.sheet.lastError = '';
     busy = false; persist(); renderAll();
-    return {sent: ok.size, deleted: delOk.size, rejected: (res.rejected || []).length};
+    return {sent: ok.size + gOk.size, deleted: delOk.size, rejected: (res.rejected || []).length};
   }catch(e){
     db.sheet.lastError = e.message; busy = false; persist(); renderAll();
     return {error: e.message};
@@ -805,17 +883,19 @@ function renderSyncBar(){
 $('#syncBar').onclick = () => queueSize() ? openPush() : pull();
 
 function openPush(){
-  const ups = pending(), dels = db.sheet.deletes;
-  if(!ups.length && !dels.length){ toast('ไม่มีรายการรอส่ง'); return; }
+  const ups = pending(), dels = db.sheet.deletes, gq = goalPending();
+  if(!ups.length && !dels.length && !gq.length){ toast('ไม่มีรายการรอส่ง'); return; }
   const spend = ups.filter(i => !isMove(i)).reduce((x,i) => x + i.amount, 0);
-  $('#puSum').innerHTML = `<small>ใหม่ ${ups.filter(i => !i.synced).length} · แก้ไข ${ups.filter(i => i.synced).length} · ลบ ${dels.length} รายการ</small>
-    <div class="big">${yen(spend)}</div><small>ยอดรายจ่ายในรายการที่จะส่ง (ไม่รวมย้ายเงิน/รับเงิน)</small>`;
-  const rows = ups.slice().sort((a,b) => a.ts.localeCompare(b.ts)).map(i => `<li><div class="it">
+  $('#puSum').innerHTML = `<small>ใหม่ ${ups.filter(i => !i.synced).length} · แก้ไข ${ups.filter(i => i.synced).length} · ลบ ${dels.length} รายการ${gq.length ? ' · กระปุก ' + gq.length : ''}</small>
+    <div class="big">${yen(spend)}</div><small>ยอดรายจ่ายในรายการที่จะส่ง (ไม่รวมย้ายเงิน/รับเงิน/กระปุก)</small>`;
+  const gRows = gq.map(g => `<li><div class="it"><div class="t">🐷 ${esc(g.name)}<span class="tag ${g.error ? 'e' : 'p'}">${g.error ? 'ชีตไม่รับ: ' + esc(g.error) : g.isNew ? 'กระปุกใหม่' : g.status === 'closed' ? 'ปิดกระปุก' : 'แก้ไขกระปุก'}</span></div>
+      <div class="m">เป้าหมาย ${yen(g.target)}${g.due ? ' · ภายใน ' + esc(fmtDate(g.due)) : ''}</div></div><div class="a nx"></div></li>`);
+  const rows = gRows.concat(ups.slice().sort((a,b) => a.ts.localeCompare(b.ts)).map(i => `<li><div class="it">
       <div class="t">${esc(i.category)}<span class="tag ${i.sync === 'error' ? 'e' : 'p'}">${i.sync === 'error' ? 'ชีตไม่รับ: ' + esc(i.syncError) : i.synced ? 'แก้ไข' : 'ใหม่'}</span></div>
       <div class="m">${esc(fmtDT(i.ts))} · ${esc(TYPE_NAME[i.type])}${i.from ? ' · ' + esc(accName(i.from)) : ''}${i.to ? ' → ' + esc(accName(i.to)) : ''}</div></div>
       <div class="a${isMove(i) ? ' nx' : ''}">${yen(i.amount)}</div></li>`)
     .concat(dels.map(d => `<li><div class="it"><div class="t">${esc(d.category || d.id)}<span class="tag e">ลบออกจากชีต</span></div>
-      <div class="m">${d.ts ? esc(fmtDT(d.ts)) : ''}</div></div><div class="a nx">${d.amount ? yen(d.amount) : ''}</div></li>`));
+      <div class="m">${d.ts ? esc(fmtDT(d.ts)) : ''}</div></div><div class="a nx">${d.amount ? yen(d.amount) : ''}</div></li>`)));
   $('#puList').innerHTML = rows.join('');
   $('#puErr').textContent = '';
   $('#puOk').disabled = false; $('#puOk').textContent = 'ยืนยันส่งขึ้นชีต';
@@ -835,12 +915,12 @@ window.addEventListener('online', () => { if(sheetOn()) pull(true); });
 document.addEventListener('visibilitychange', () => {
   if(document.hidden || !sheetOn()) return;
   const last = db.sheet.lastSync ? Date.parse(db.sheet.lastSync) : 0;
-  if(Date.now() - last > 60000) pull(true);           // refresh budgets when the app comes back; never sends
+  if(Date.now() - last > 60000) pull(true);           // refresh the numbers when the app comes back; never sends
 });
 
 /* ================= Wallet check =================
    Compare the balance the app has worked out with the one the wallet app shows, then record
-   the difference: a forgotten expense (counts against a budget item the user picks each time),
+   the difference: a forgotten expense (counted under a category the user picks each time),
    a forgotten top-up (a transfer), or a plain adjustment such as points back (not spending). */
 const rc = {acc:'', kind:'', cat:'', line:''};
 function openRecon(acc){
@@ -868,7 +948,7 @@ function renderRecon(){
        <small>${r.d < 0 ? 'ยอดจริงน้อยกว่าที่บันทึก' : 'ยอดจริงมากกว่าที่บันทึก'}</small>`;
   $('#rcOk').disabled = false; $('#rcOk').textContent = r.d === 0 ? 'ปิด' : 'ตรวจรายการก่อนบันทึก';
   if(r.d === 0) return;
-  const kinds = r.d < 0 ? [['forgot','ลืมบันทึกรายจ่าย (นับเข้างบ)'], ['adjust','ปรับยอดเฉยๆ (ไม่นับเข้างบ)']]
+  const kinds = r.d < 0 ? [['forgot','ลืมบันทึกรายจ่าย (นับเป็นรายจ่าย)'], ['adjust','ปรับยอดเฉยๆ (ไม่นับเป็นรายจ่าย)']]
                         : [['topup','ลืมบันทึกการเติมเงิน'], ['adjust','ปรับยอดเฉยๆ เช่น แต้มคืน']];
   if(!kinds.some(k => k[0] === rc.kind)) rc.kind = '';
   $('#rcKind').innerHTML = kinds.map(([k,n]) => `<button type="button" class="chip${rc.kind===k?' on':''}" data-k="${k}">${n}</button>`).join('');
@@ -880,7 +960,7 @@ function renderRecon(){
     const ls = rc.cat ? groups[rc.cat] : [];
     $('#rcLine').disabled = !rc.cat;
     $('#rcLine').innerHTML = `<option value="">${rc.cat ? 'เลือกรายการ' : 'เลือกหมวดก่อน'}</option>` +
-      ls.map(l => `<option value="${esc(l.id)}"${rc.line===l.id?' selected':''}>${esc(l.item)} · ${leftTxt(l.budget - lineUsed(l, D))}</option>`).join('');
+      ls.map(l => `<option value="${esc(l.id)}"${rc.line===l.id?' selected':''}>${esc(l.item)}</option>`).join('');
   }
   if(rc.kind === 'topup') $('#rcSrc').innerHTML = accOpts($('#rcSrc').value, D, rc.acc, 'เลือกบัญชีต้นทาง');
 }
@@ -913,7 +993,9 @@ $('#rcOk').onclick = () => {
   closeM('#mRecon'); showReview(it);
 };
 
-/* ================= Dashboard ================= */
+/* ================= Dashboard =================
+   Where the money went this cycle, beside the last cycle. No limits and no warnings:
+   the only targets in the app are the goals the user sets for themselves. */
 function renderDash(){
   const el = $('#dash'), c = cfg();
   if(!ready()){ el.innerHTML = ''; return; }
@@ -921,59 +1003,53 @@ function renderDash(){
   const today = new Date(); today.setHours(0,0,0,0);
   const start = dOnly(c.cycle.start), end = dOnly(c.cycle.end);
   const totalDays = Math.round((end - start)/dayMs) + 1, daysLeft = Math.max(0, Math.round((end - today)/dayMs) + 1);
-  const budget = c.lines.reduce((x,l) => x + l.budget, 0), used = c.lines.reduce((x,l) => x + lineUsed(l, D), 0), left = budget - used;
-  const perDay = daysLeft ? Math.floor(Math.max(0, left)/daysLeft) : 0;
-  const cats = Object.entries(lineGroups()).map(([g, ls]) => ({g, ls, b: ls.reduce((x,l) => x + l.budget, 0), u: ls.reduce((x,l) => x + lineUsed(l, D), 0)}))
-    .sort((a,b) => (b.b ? b.u/b.b : 0) - (a.b ? a.u/a.b : 0));
-  const evs = c.events.filter(e => !e.done && !D.done.has(e.id)).sort((a,b) => a.date.localeCompare(b.date)).slice(0, 5);
+  const passed = Math.max(1, totalDays - daysLeft);
+  const used = c.lines.reduce((x,l) => x + lineUsed(l, D), 0), prev = c.lines.reduce((x,l) => x + linePrev(l, D), 0);
+  const cats = Object.entries(lineGroups()).map(([g, ls]) => ({g, ls, u: ls.reduce((x,l) => x + lineUsed(l, D), 0), p: ls.reduce((x,l) => x + linePrev(l, D), 0)}));
+  const gs = activeGoals(), inGoals = gs.reduce((x,f) => x + fundBal(f, D), 0);
   const t = db.sheet.lastSync ? new Date(db.sheet.lastSync) : null, n = queueSize();
   el.innerHTML = `
   <div class="card">
     <small>รอบ ${c.cycle.key} · ${start.getDate()} ${TH_MON[start.getMonth()]} – ${end.getDate()} ${TH_MON[end.getMonth()]} · เหลือ ${daysLeft} วัน</small>
-    <div class="big ${left < 0 ? 'over-t' : ''}" style="font-size:34px">${left < 0 ? 'เกินงบ ' + yen(-left) : yen(left)}</div>
-    <small>${left < 0 ? 'ใช้เกินงบรอบนี้' : 'งบคงเหลือรอบนี้'} · ใช้ไป ${yen(used)} จาก ${yen(budget)}</small>
-    ${meter(used, budget)}
+    <div class="big" style="font-size:34px">${yen(used)}</div>
+    <small>ใช้ไปรอบนี้ · รอบก่อนทั้งรอบ ${yen(prev)}</small>
     <div class="kpis">
-      <div class="kpi"><small>งบคงเหลือเฉลี่ยต่อวัน (รวมบิลที่ยังไม่จ่าย)</small><b>${yen(perDay)}</b></div>
       <div class="kpi"><small>ผ่านไปแล้ว</small><b>${totalDays - daysLeft} / ${totalDays} วัน</b></div>
+      <div class="kpi"><small>เฉลี่ยต่อวัน (รอบนี้)</small><b>${yen(Math.round(used / passed))}</b></div>
       <div class="kpi"><small>รายรับต่อเดือน</small><b>${yen(c.income)}</b></div>
-      <div class="kpi"><small>เหลือเก็บตามงบ</small><b>${yen(c.income - budget)}</b></div>
+      <div class="kpi"><small>รายรับ − ใช้ไปรอบนี้</small><b>${yen(c.income - used)}</b></div>
     </div>
   </div>
-  ${pieCard(cats, D)}
+  ${pieCard(cats)}
   <div class="card"><h2>ยอดเงินแต่ละบัญชี</h2>
     ${c.accounts.map(a => { const b = accBal(a, D); return `<div class="drow"><div class="top"><span>${esc(a.name)} <button class="lnk" data-recon="${esc(a.id)}">ตรวจยอด</button></span><span class="${b < 0 ? 'over-t' : ''}">${yen(b)}</span></div></div>`; }).join('')}
   </div>
-  <div class="card"><h2>กองเงินเป้าหมาย</h2>
-    ${c.funds.map(f => { const b = fundBal(f, D);
-      return `<div class="drow"><div class="top"><span>${esc(f.name)}</span><span>${yen(b)} / ${yen(f.target)}</span></div>${meter(b, f.target)}<div class="sub">${b >= f.target ? 'ครบเป้าหมายแล้ว' : 'ขาดอีก ' + yen(f.target - b)}</div></div>`; }).join('')}
-  </div>
-  <div class="card"><h2>เหตุการณ์ที่กำลังจะมาถึง</h2>
-    ${evs.length ? evs.map(e => { const d = dOnly(e.date), k = Math.round((d - today)/dayMs);
-      return `<div class="ev"><span class="d">${d.getDate()} ${TH_MON[d.getMonth()]}</span><span>${esc(e.name)}</span><span class="n">${e.kind === 'รับ' ? '+' : '−'}${yen(e.amount)}</span>
-        <small>${k > 0 ? 'อีก ' + k + ' วัน' : k === 0 ? 'วันนี้' : 'เลยกำหนด ' + (-k) + ' วัน'} · กอง${esc(fundName(e.fund))}${e.scenario && e.scenario !== 'ทั้งคู่' ? ' · กรณี ' + esc(e.scenario) : ''}</small></div>`; }).join('')
-      : '<p class="hint">ไม่มีเหตุการณ์ที่รออยู่</p>'}
+  <div class="card"><h2>🐷 กระปุก</h2>
+    ${gs.length ? gs.map(f => { const b = fundBal(f, D);
+      return `<div class="drow"><div class="top"><span>${esc(f.name)}</span><span>${yen(b)}${f.target ? ' / ' + yen(f.target) : ''}</span></div>${f.target ? meter(b, f.target) : ''}</div>`; }).join('') : '<p class="hint">ยังไม่มีกระปุก</p>'}
+    <div class="bar2"><button class="btn sm" data-go="goal">ดูและจัดการกระปุก</button></div>
+    <p class="hint">รวมในกระปุก ${yen(inGoals)}</p>
   </div>
   <p class="hint">ข้อมูลจากชีต ณ ${t ? esc(fmtDT(toLocalInput(t))) : '-'}${n ? ` รวมรายการที่รอส่ง ${n} รายการ` : ''}</p>`;
 }
 
-/* ---------- donut of the cycle by main category ----------
-   Colour follows the category (its order in BudgetLines), never its size, so a slice keeps
+/* ---------- donut of a cycle by main category ----------
+   Colour follows the category (its order in Categories), never its size, so a slice keeps
    its colour from one cycle to the next; "อื่นๆ" is the neutral Other. The centre shows the
    total, or the tapped slice; every slice also has a labelled legend row with its share. */
-let pieMode = '', piePick = '';
+let pieMode = 'cur', piePick = '';
 function arc(cx, cy, R, r, a0, a1){
   const p = (rad, a) => `${(cx + rad*Math.cos(a)).toFixed(2)} ${(cy + rad*Math.sin(a)).toFixed(2)}`;
   const big = a1 - a0 > Math.PI ? 1 : 0;
   return `M ${p(R,a0)} A ${R} ${R} 0 ${big} 1 ${p(R,a1)} L ${p(r,a1)} A ${r} ${r} 0 ${big} 0 ${p(r,a0)} Z`;
 }
-function pieCard(cats, D){
+function pieCard(cats){
+  const D = localDelta();
   const byOrder = Object.keys(lineGroups()).filter(g => g !== 'อื่นๆ');
   const slot = g => g === 'อื่นๆ' || byOrder.indexOf(g) > 7 ? 'var(--sOther)' : 'var(--s' + (byOrder.indexOf(g) + 1) + ')';
-  const usedTotal = cats.reduce((x,c) => x + Math.max(0, c.u), 0), budgetTotal = cats.reduce((x,c) => x + c.b, 0);
-  const mode = pieMode || (usedTotal > 0 ? 'used' : 'budget');
-  const val = c => mode === 'used' ? Math.max(0, c.u) : c.b;
-  const rows = cats.map(c => ({...c, v: val(c)})).sort((a,b) => b.v - a.v);
+  const cur = pieMode === 'cur', key = cur ? cfg().cycle.key : (cfg().prevCycle || {}).key;
+  const val = c => Math.max(0, cur ? c.u : c.p), other = c => Math.max(0, cur ? c.p : c.u);
+  const rows = cats.map(c => ({...c, v: val(c), o: other(c)})).sort((a,b) => b.v - a.v);
   const total = rows.reduce((x,r) => x + r.v, 0);
   if(piePick && !rows.some(r => r.g === piePick && r.v > 0)) piePick = '';
   const C = 110, R = 104, r = 66, live = rows.filter(x => x.v > 0);
@@ -987,42 +1063,162 @@ function pieCard(cats, D){
     a0 = a1;
   });
   const pick = rows.find(x => x.g === piePick);
+  const cmpTxt = x => cur ? vsPrev(x.u, x.p) : 'รอบนี้ใช้ไปแล้ว ' + yen(x.u);
   const mid = pick
     ? `<small><span class="chip-dot" style="background:${slot(pick.g)}"></span>${esc(pick.g)}</small><b>${yen(pick.v)}</b>
-       <span class="pct">${(pick.v/total*100).toFixed(1)}%</span><small>${leftTxt(pick.b - pick.u)}</small>`
-    : mode === 'used'
-      ? `<small>ใช้ไปรอบนี้</small><b>${yen(usedTotal)}</b><small>จากงบ ${yen(budgetTotal)}<br>${budgetTotal ? (usedTotal/budgetTotal*100).toFixed(0) : 0}% ของงบ</small>`
-      : `<small>งบที่วางไว้</small><b>${yen(budgetTotal)}</b><small>${rows.length} หมวด · รอบ ${cfg().cycle.key}</small>`;
+       <span class="pct">${(pick.v/total*100).toFixed(1)}%</span><small>${esc(cmpTxt(pick))}</small>`
+    : `<small>${cur ? 'ใช้ไปรอบนี้' : 'ใช้ไปรอบก่อน'}</small><b>${yen(total)}</b><small>${live.length} หมวด · รอบ ${key || '-'}</small>`;
   return `<div class="card pie-root dn-card">
-    <div class="dn-head"><h2>สัดส่วนตามหมวด</h2>
-      <div class="dn-seg" role="tablist" aria-label="แสดงตาม">
-        <button type="button" class="${mode==='used'?'on':''}" data-pm="used" role="tab" aria-selected="${mode==='used'}">ใช้จริง</button>
-        <button type="button" class="${mode==='budget'?'on':''}" data-pm="budget" role="tab" aria-selected="${mode==='budget'}">งบ</button>
+    <div class="dn-head"><h2>เงินไปทางไหน</h2>
+      <div class="dn-seg" role="tablist" aria-label="รอบที่แสดง">
+        <button type="button" class="${cur?'on':''}" data-pm="cur" role="tab" aria-selected="${cur}">รอบนี้</button>
+        <button type="button" class="${!cur?'on':''}" data-pm="prev" role="tab" aria-selected="${!cur}">รอบก่อน</button>
       </div></div>
     <div class="dn-wrap${pick ? ' sel' : ''}">
-      <svg viewBox="0 0 220 220" role="img" aria-label="สัดส่วน${mode === 'used' ? 'รายจ่าย' : 'งบ'}ตามหมวด">
+      <svg viewBox="0 0 220 220" role="img" aria-label="สัดส่วนรายจ่ายตามหมวด ${cur ? 'รอบนี้' : 'รอบก่อน'}">
         ${total ? '' : `<path class="track" d="${arc(C, C, R, r, -Math.PI/2, 1.5*Math.PI - 1e-4)}"/>`}${paths}</svg>
-      <div class="dn-mid">${total ? mid : '<small>ยังไม่มีรายจ่าย<br>ในรอบนี้</small>'}</div>
+      <div class="dn-mid">${total ? mid : `<small>ยังไม่มีรายจ่าย<br>ใน${cur ? 'รอบนี้' : 'รอบก่อน'}</small>`}</div>
     </div>
     <p class="dn-tip">${total ? (pick ? 'แตะอีกครั้งเพื่อดูภาพรวม' : 'แตะชิ้นหรือชื่อหมวดเพื่อดูรายละเอียด') : ''}</p>
     <div class="lg-list">${rows.map(x => { const share = total ? x.v/total*100 : 0;
       return `<details class="lg-row${piePick === x.g ? ' on' : ''}" data-lg="${esc(x.g)}"${piePick === x.g ? ' open' : ''}><summary>
         <span class="sw" style="background:${slot(x.g)}"></span>
-        <span class="nm">${esc(x.g)}<small>${mode === 'used' ? 'งบ ' + yen(x.b) + ' · ' + leftTxt(x.b - x.u) : 'ใช้ไปแล้ว ' + yen(x.u)}</small></span>
-        <span class="v ${mode === 'used' && x.u > x.b ? 'over-t' : ''}">${yen(x.v)}<small>${share.toFixed(1)}%</small></span>
+        <span class="nm">${esc(x.g)}<small>${esc(cmpTxt(x)) || '&nbsp;'}</small></span>
+        <span class="v">${yen(x.v)}<small>${share.toFixed(1)}%</small></span>
         <span class="share"><i style="width:${share.toFixed(1)}%;background:${slot(x.g)}"></i></span></summary>
-        <div class="inner">${x.ls.map(l => { const u = lineUsed(l, D);
-          return `<div class="drow"><div class="top"><span>${esc(l.item)}</span><span class="${u > l.budget ? 'over-t' : ''}">${leftTxt(l.budget - u)}</span></div>${meter(u, l.budget)}<div class="sub">${yen(u)} / ${yen(l.budget)} · ${esc(l.channel)}</div></div>`; }).join('')}</div>
+        <div class="inner">${x.ls.map(l => { const u = lineUsed(l, D), p = linePrev(l, D);
+          return `<div class="drow"><div class="top"><span>${esc(l.item)}</span><span>${yen(cur ? u : p)}</span></div><div class="sub">${esc(cur ? (vsPrev(u, p) || 'ยังไม่มีรายจ่าย') : 'รอบนี้ ' + yen(u))}</div></div>`; }).join('')}</div>
       </details>`; }).join('')}</div>
   </div>`;
 }
 $('#dash').addEventListener('click', e => {
   const m = e.target.closest('[data-pm]');
   if(m){ pieMode = m.dataset.pm; piePick = ''; renderDash(); return; }
+  const go = e.target.closest('[data-go]');
+  if(go){ show(go.dataset.go); return; }
   const p = e.target.closest('[data-pie]');
   if(p){ piePick = piePick === p.dataset.pie ? '' : p.dataset.pie; renderDash(); return; }
   const s = e.target.closest('.lg-row summary');
   if(s){ e.preventDefault(); const g = s.parentElement.dataset.lg; piePick = piePick === g ? '' : g; renderDash(); }
+});
+
+/* ================= Goals (กระปุก) =================
+   A goal is a share of the money in ゆうちょ set aside for something the user chose, with a
+   target they set and, if they like, a date. Money goes in and out as fund_move entries, and a
+   purchase paid from a goal is a "จ่ายจากกระปุก" entry, so the sheet keeps the full history. */
+const yuchoAcc = () => accList().find(a => a.id === 'yucho');
+const newGoalId = () => 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+function goalPlan(f, b){
+  if(f.target && b >= f.target) return {done:true, txt:'ครบเป้าแล้ว 🎉'};
+  if(!f.due) return {txt: f.target ? `ขาดอีก <b>${yen(f.target - b)}</b>` : 'ไม่ได้ตั้งเป้า'};
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = Math.round((dOnly(f.due) - today)/dayMs), need = Math.max(0, f.target - b);
+  if(days < 0) return {txt:`เลยวันที่ตั้งไว้ (${esc(fmtDate(f.due))}) · ขาดอีก <b>${yen(need)}</b>`};
+  const months = Math.max(1, Math.ceil(days / 30.44));            // average month length
+  return {txt:`ภายใน ${esc(fmtDate(f.due))} · อีก ${months} เดือน · ใส่เดือนละ <b>${yen(Math.ceil(need / months))}</b> ก็ทัน`};
+}
+function renderGoals(){
+  const el = $('#goals');
+  if(!ready()){ el.innerHTML = ''; return; }
+  const D = localDelta(), all = goals(), act = all.filter(g => g.status !== 'closed'), closed = all.filter(g => g.status === 'closed');
+  const inGoals = act.reduce((x,f) => x + fundBal(f, D), 0), y = yuchoAcc();
+  const card = f => { const b = fundBal(f, D), pl = goalPlan(f, b), pct = f.target ? Math.min(100, b/f.target*100) : 0;
+    return `<div class="goal${f.status === 'closed' ? ' closed' : ''}">
+      <div class="gh"><b>${esc(f.name)}</b>${f.queued ? '<span class="tag p">รอส่ง</span>' : ''}</div>
+      <div class="gv">${yen(b)}${f.target ? ` <small>/ ${yen(f.target)} · ${pct.toFixed(0)}%</small>` : ''}</div>
+      ${f.target ? meter(b, f.target) : ''}
+      <div class="gs">${pl.txt}</div>
+      ${f.status === 'closed' ? `<div class="bar2"><button class="btn sm" data-ged="${esc(f.id)}">เปิดใช้อีกครั้ง / แก้ไข</button></div>`
+        : `<div class="ga"><button class="btn" data-gin="${esc(f.id)}">＋ ใส่เงิน</button><button class="btn" data-gout="${esc(f.id)}"${b > 0 ? '' : ' disabled'}>− ถอน</button>
+          <button class="btn" data-gpay="${esc(f.id)}"${b > 0 ? '' : ' disabled'}>ใช้จ่าย</button><button class="btn" data-ged="${esc(f.id)}" aria-label="แก้ไขกระปุก">✏️</button></div>`}
+    </div>`; };
+  el.innerHTML = `
+    <div class="card"><small>เงินในกระปุกทั้งหมด</small><div class="big">${yen(inGoals)}</div>
+      ${y ? `<small>${esc(y.name)} ${yen(accBal(y, D))} · ยังไม่ได้แบ่งเข้ากระปุก ${yen(accBal(y, D) - inGoals)}</small>` : ''}</div>
+    <button class="btn pri" id="goNew" style="width:100%">＋ สร้างกระปุกใหม่</button>
+    ${act.length ? act.map(card).join('') : '<p class="empty">ยังไม่มีกระปุก · สร้างอันแรกได้เลย</p>'}
+    ${closed.length ? `<details class="dl" style="margin-top:14px"><summary><div class="drow"><div class="top"><span>กระปุกที่ปิดแล้ว (${closed.length})</span><span></span></div></div></summary>${closed.map(card).join('')}</details>` : ''}
+    <p class="hint">เงินในกระปุกยังอยู่ใน ゆうちょ ตามจริง กระปุกแค่แบ่งไว้ว่าเงินก้อนไหนมีไว้ทำอะไร · ใส่เงิน ถอน หรือใช้จ่าย จะส่งขึ้นชีตพร้อมรายการอื่นเมื่อกดส่ง</p>`;
+}
+let goalEdit = null;
+function openGoal(id){
+  const f = id ? goals().find(g => g.id === id) : null; goalEdit = f ? f.id : null;
+  $('#goT').textContent = f ? 'แก้ไขกระปุก' : 'สร้างกระปุก';
+  $('#goOk').textContent = f ? (f.status === 'closed' ? 'บันทึกและเปิดใช้อีกครั้ง' : 'บันทึกการแก้ไข') : 'สร้างกระปุก';
+  $('#goName').value = f ? f.name : ''; $('#goTarget').value = f && f.target ? f.target : ''; $('#goDue').value = f ? f.due || '' : '';
+  $('#goStart').value = ''; $('#goStartW').hidden = !!f; $('#goCloseW').hidden = !f || f.status === 'closed'; $('#goErr').textContent = '';
+  openM('#mGoal'); if(!f) $('#goName').focus();
+}
+function queueGoal(g){
+  const old = db.goalQ[g.id];
+  db.goalQ[g.id] = {id:g.id, name:g.name, target:g.target, due:g.due || '', status:g.status, isNew: old ? !!old.isNew : !!g.isNew, updatedAt:new Date().toISOString()};
+}
+$('#goDueClear').onclick = () => { $('#goDue').value = ''; };
+$('#goCancel').onclick = () => closeM('#mGoal');
+$('#fGoal').onsubmit = e => {
+  e.preventDefault();
+  const name = $('#goName').value.trim(), tRaw = $('#goTarget').value.trim(), target = tRaw === '' ? 0 : parseAmt(tRaw), due = $('#goDue').value;
+  const sRaw = $('#goStart').value.trim(), start = sRaw === '' ? 0 : parseAmt(sRaw);
+  const err = !name ? 'กรุณาตั้งชื่อกระปุก' : name.length > 60 ? 'ชื่อยาวเกิน 60 ตัวอักษร'
+    : !(target >= 0) ? 'เป้าหมายต้องเป็นตัวเลขจำนวนเต็ม' : !(start >= 0) ? 'เงินเริ่มต้นต้องเป็นตัวเลขจำนวนเต็ม'
+    : goals().some(g => g.name === name && g.id !== goalEdit && g.status !== 'closed') ? 'มีกระปุกชื่อนี้อยู่แล้ว' : '';
+  $('#goErr').textContent = err; if(err) return;
+  const now = new Date().toISOString();
+  if(goalEdit){
+    queueGoal({id:goalEdit, name, target, due, status:'active'});
+    persist(); closeM('#mGoal'); renderAll(); toast(`แก้ไขกระปุก${name}แล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง`); return;
+  }
+  const id = newGoalId();
+  queueGoal({id, name, target, due, status:'active', isNew:true});
+  if(start > 0) db.items.push({id:uid(), type:'fund_move', amount:start, ts:toLocalInput(new Date()), note:'เงินเริ่มต้น', lineId:'', from:'', to:'',
+    fromFund:'', toFund:id, eventId:'', category:'ใส่เงินเข้ากระปุก ' + name, sync:'pending', createdAt:now, updatedAt:now});
+  persist(); closeM('#mGoal'); renderAll();
+  toast(`สร้างกระปุก${name}แล้ว${start ? ' · ใส่ ' + yen(start) : ''} · รอส่ง ${queueSize()} รายการ`);
+};
+$('#goClose').onclick = () => {
+  const f = goals().find(g => g.id === goalEdit); if(!f) return;
+  const b = fundBal(f, localDelta());
+  ask(`ปิดกระปุก${f.name}?`, b > 0 ? `เงิน ${yen(b)} ในกระปุกจะกลับไปเป็นเงินที่ยังไม่ได้แบ่ง (ยังอยู่ใน ゆうちょ เหมือนเดิม) · ประวัติยังอยู่ในชีต` : 'ประวัติยังอยู่ในชีต เปิดใช้อีกครั้งได้ทีหลัง', () => {
+    const now = new Date().toISOString();
+    if(b > 0) db.items.push({id:uid(), type:'fund_move', amount:b, ts:toLocalInput(new Date()), note:'ปิดกระปุก', lineId:'', from:'', to:'',
+      fromFund:f.id, toFund:'', eventId:'', category:'ถอนจากกระปุก ' + f.name, sync:'pending', createdAt:now, updatedAt:now});
+    queueGoal({...f, status:'closed'});
+    persist(); closeM('#mGoal'); renderAll(); toast(`ปิดกระปุก${f.name}แล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง`);
+  });
+};
+const mv = {id:'', dir:'in'};
+function openMove(id, dir){
+  const f = goals().find(g => g.id === id); if(!f) return;
+  Object.assign(mv, {id, dir});
+  const D = localDelta(), b = fundBal(f, D), y = yuchoAcc(), free = y ? accBal(y, D) - activeGoals().reduce((x,g) => x + fundBal(g, D), 0) : null;
+  $('#mvT').textContent = dir === 'in' ? `ใส่เงินเข้ากระปุก${f.name}` : `ถอนจากกระปุก${f.name}`;
+  $('#mvInfo').innerHTML = `<small>ในกระปุกตอนนี้</small><div class="big2">${yen(b)}${f.target ? ' / ' + yen(f.target) : ''}</div>${f.target ? meter(b, f.target) : ''}
+    <small>${dir === 'in' ? (free !== null ? 'เงินใน ゆうちょ ที่ยังไม่ได้แบ่ง ' + yen(free) : '') : 'ถอนแล้วเงินกลับไปเป็นเงินที่ยังไม่ได้แบ่งใน ゆうちょ'}</small>`;
+  $('#mvAmt').value = ''; $('#mvNote').value = ''; $('#mvErr').textContent = '';
+  openM('#mMove'); $('#mvAmt').focus();
+}
+$('#mvCancel').onclick = () => closeM('#mMove');
+$('#mvOk').onclick = () => {
+  const f = goals().find(g => g.id === mv.id); if(!f) return;
+  const amount = parseAmt($('#mvAmt').value), b = fundBal(f, localDelta());
+  const err = !(amount > 0) ? 'กรุณากรอกจำนวนเงินเป็นตัวเลขจำนวนเต็มมากกว่า 0' : mv.dir === 'out' && amount > b ? `ถอนได้ไม่เกิน ${yen(b)}` : '';
+  $('#mvErr').textContent = err; if(err) return;
+  const it = {type:'fund_move', amount, ts:toLocalInput(new Date()), note:$('#mvNote').value.trim(), lineId:'', from:'', to:'',
+    fromFund: mv.dir === 'out' ? f.id : '', toFund: mv.dir === 'in' ? f.id : '', eventId:'',
+    category: (mv.dir === 'in' ? 'ใส่เงินเข้ากระปุก ' : 'ถอนจากกระปุก ') + f.name};
+  closeM('#mMove'); showReview(it);
+};
+$('#goals').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.id === 'goNew') return openGoal();
+  if(b.dataset.ged) return openGoal(b.dataset.ged);
+  if(b.dataset.gin) return openMove(b.dataset.gin, 'in');
+  if(b.dataset.gout) return openMove(b.dataset.gout, 'out');
+  if(b.dataset.gpay){                       // a purchase paid from this goal: the entry form, ready to go
+    Object.assign(sx, {type:'one_time', cat:'', line:null, to:'', fund:b.dataset.gpay, feeOn:false});
+    if(accList().some(a => a.id === 'yucho')) sx.from = 'yucho';
+    show('input'); focusAmt();
+  }
 });
 
 /* ================= History ================= */
@@ -1087,13 +1283,13 @@ function renderHist(){
   const vis = visible(), spend = vis.filter(i => !isMove(i)), total = spend.reduce((s,i) => s + i.amount, 0), moves = vis.filter(isMove).reduce((s,i) => s + i.amount, 0);
   const byCat = {}; spend.forEach(i => byCat[i.category] = (byCat[i.category] || 0) + i.amount);
   const cats = Object.entries(byCat).sort((a,b) => b[1] - a[1]), max = cats.length ? cats[0][1] : 1;
-  let budgetLine = '';
+  let sheetLine = '';
   if(ready() && filter === 'month' && offset === 0){
-    const D = localDelta(), b = cfg().lines.reduce((x,l) => x + l.budget, 0), u = cfg().lines.reduce((x,l) => x + lineUsed(l, D), 0);
-    budgetLine = ` · งบรอบนี้ตามชีต ใช้ไป ${yen(u)} จาก ${yen(b)}`;
+    const D = localDelta(), u = cfg().lines.reduce((x,l) => x + lineUsed(l, D), 0);
+    sheetLine = ` · ทั้งรอบตามชีต ${yen(u)}`;
   }
   $('#hSum').innerHTML = `<small>รายจ่าย${dayPicks.size ? ` ${dayPicks.size} วันที่เลือก` : 'ในมุมมองนี้'} (${spend.length} รายการ)</small>
-    <div class="big">${yen(total)}</div><small>ย้ายเงิน/รับเงิน ${yen(moves)} (ไม่นับเป็นรายจ่าย)${budgetLine}</small>
+    <div class="big">${yen(total)}</div><small>ย้ายเงิน/รับเงิน/กระปุก ${yen(moves)} (ไม่นับเป็นรายจ่าย)${sheetLine}</small>
     <div class="bars">${cats.map(([c,v]) => `<div class="bar"><span>${esc(c)}</span><i style="width:${Math.max(3, v/max*100)}%"></i><span class="n">${yen(v)}</span></div>`).join('')}</div>`;
   $('#hSort').textContent = sortAsc ? 'เรียง: วันเก่า → ใหม่' : 'เรียง: วันใหม่ → เก่า';
   const out = []; let day = '';
@@ -1155,22 +1351,17 @@ function openEdit(id){
   $('#edAmt').value = it.amount; $('#edNote').value = it.note || ''; setDT($('#edTime'), it.ts); $('#edErr').textContent = '';
   $('#edLineW').hidden = t !== 'expense';
   $('#edLine').innerHTML = cfg().lines.map(l => `<option value="${esc(l.id)}"${l.id===it.lineId?' selected':''}>${esc(l.category)} · ${esc(l.item)}</option>`).join('');
-  $('#edFromW').hidden = t === 'income' || t === 'adjust';
+  $('#edFromW').hidden = t === 'income' || t === 'adjust' || t === 'fund_move';
   $('#edFromL').textContent = t === 'transfer' ? 'จากบัญชี' : 'จ่ายจาก';
   $('#edFrom').innerHTML = accOpts(it.from, D, '', 'เลือกบัญชี');
   $('#edToW').hidden = !(t === 'transfer' || t === 'income');      // an adjustment keeps its direction
   $('#edTo').innerHTML = accOpts(it.to, D, '', 'เลือกบัญชี');
-  $('#edFundW').hidden = !(t === 'one_time' || t === 'income');
-  $('#edFund').innerHTML = fundOpts(t === 'one_time' ? it.fromFund : it.toFund, D, t === 'one_time' ? 'เลือกกอง' : 'ไม่เข้ากอง');
-  $('#edEventW').hidden = !(t === 'one_time' || t === 'income');
+  $('#edFundW').hidden = !(t === 'one_time' || t === 'income' || t === 'fund_move');
+  $('#edFund').innerHTML = fundOpts(t === 'one_time' ? it.fromFund : t === 'fund_move' ? (it.toFund || it.fromFund) : it.toFund, D, t === 'one_time' ? 'เลือกกระปุก' : 'ไม่เข้ากระปุก');
   const fee = it.feeId ? db.items.find(i => i.id === it.feeId) : null;
   $('#edFeeW').hidden = !!it.feeOf || !canFee(t);
   $('#edFee').value = fee ? fee.amount : '';
   $('#edFeeHint').textContent = it.feeOf ? '' : feeWhere(it);
-  const kind = t === 'one_time' ? 'จ่าย' : 'รับ';
-  const evs = cfg().events.filter(e => e.kind === kind && (e.id === it.eventId || (!e.done && !D.done.has(e.id))));
-  $('#edEvent').innerHTML = '<option value="">ไม่ผูกกับเหตุการณ์</option>' +
-    evs.map(e => `<option value="${esc(e.id)}"${e.id===it.eventId?' selected':''}>${esc(e.date)} · ${esc(e.name)} · ${yen(e.amount)}</option>`).join('');
   openM('#mEdit');
 }
 $('#edCancel').onclick = () => closeM('#mEdit');
@@ -1180,17 +1371,21 @@ $('#fEd').onsubmit = e => {
   const amount = parseAmt($('#edAmt').value), ts = getDT($('#edTime')), t = it.type;
   const from = $('#edFrom').value, to = $('#edTo').value, fund = $('#edFund').value, l = lineOf($('#edLine').value);
   const err = !(amount > 0) ? 'จำนวนเงินไม่ถูกต้อง' : (!ts || isNaN(parseTs(ts))) ? 'วันและเวลาไม่ถูกต้อง'
-    : t === 'expense' && (!l || !from) ? 'กรุณาเลือกรายการงบและบัญชี'
+    : t === 'expense' && (!l || !from) ? 'กรุณาเลือกหมวดและบัญชี'
+    : t === 'fund_move' && !fund ? 'กรุณาเลือกกระปุก'
     : t === 'transfer' && (!from || !to || from === to) ? 'เลือกบัญชีต้นทางและปลายทางที่ต่างกัน'
     : t === 'income' && !to ? 'กรุณาเลือกบัญชีที่รับเงิน'
-    : t === 'one_time' && (!from || !fund) ? 'กรุณาเลือกบัญชีและกอง' : '';
+    : t === 'one_time' && (!from || !fund) ? 'กรุณาเลือกบัญชีและกระปุก' : '';
   $('#edErr').textContent = err; if(err) return;
   Object.assign(it, {amount, ts, note:$('#edNote').value.trim(), updatedAt:new Date().toISOString()});
   if(t === 'expense') Object.assign(it, {lineId:l.id, from, category:l.item});
   if(t === 'transfer') Object.assign(it, {from, to, category:`ย้ายเงิน ${accName(from)} → ${accName(to)}`});
-  const ev = $('#edEvent').value, evObj = ev ? cfg().events.find(x => x.id === ev) : null;
-  if(t === 'income') Object.assign(it, {to, toFund:fund, eventId:ev, category:'รับเงิน ' + (evObj ? evObj.name : accName(to))});
-  if(t === 'one_time') Object.assign(it, {from, fromFund:fund, eventId:ev, category: evObj ? evObj.name : 'จ่ายจากกอง ' + fundName(fund)});
+  if(t === 'income') Object.assign(it, {to, toFund:fund, category:'รับเงิน ' + accName(to) + (fund ? ' → กระปุก' + fundName(fund) : '')});
+  if(t === 'one_time') Object.assign(it, {from, fromFund:fund, category: it.note || 'จ่ายจากกระปุก ' + fundName(fund)});
+  if(t === 'fund_move'){
+    if(it.toFund) Object.assign(it, {toFund:fund, category:'ใส่เงินเข้ากระปุก ' + fundName(fund)});
+    else Object.assign(it, {fromFund:fund, category:'ถอนจากกระปุก ' + fundName(fund)});
+  }
   it.sync = 'pending'; delete it.syncError;
   // keep the paired fee in step: create, update or remove it
   let feeMsg = '';
@@ -1244,13 +1439,13 @@ $('#shConnect').onclick = async () => {
 };
 $('#shPull').onclick = () => pull();
 // the sheet token never goes into a backup file
-const backupJson = () => JSON.stringify({app:'expense-tracker', exportedAt:new Date().toISOString(), schemaVersion:SCHEMA,
-  items:db.items, sheet: db.sheet ? {url:db.sheet.url, deletes:db.sheet.deletes} : null}, null, 1);
+const backupJson = () => JSON.stringify({app:'paynote', exportedAt:new Date().toISOString(), schemaVersion:SCHEMA,
+  items:db.items, goalQ:db.goalQ, sheet: db.sheet ? {url:db.sheet.url, deletes:db.sheet.deletes} : null}, null, 1);
 $('#stDl').onclick = () => {
   try{
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([backupJson()], {type:'application/json'}));
-    a.download = `expense-backup-${toLocalInput(new Date()).replace(/[:T]/g,'-')}.json`;
+    a.download = `paynote-backup-${toLocalInput(new Date()).replace(/[:T]/g,'-')}.json`;
     document.body.appendChild(a); a.click(); a.remove(); toast('ดาวน์โหลดไฟล์สำรองแล้ว');
   }catch(e){ toast('ดาวน์โหลดไม่ได้ · ใช้ “คัดลอก JSON” แทน'); }
 };
@@ -1267,7 +1462,7 @@ function importJson(text){
     if(!it.id || have.has(it.id) || !(amount > 0) || !TYPE_NAME[it.type] || isNaN(parseTs(it.ts))) continue;
     db.items.push({id:String(it.id), ts:String(it.ts).slice(0,16), type:it.type, lineId:String(it.lineId || ''), category:String(it.category || ''),
       amount, note:String(it.note || ''), from:String(it.from || it.method || ''), to:String(it.to || it.toAccount || ''),
-      fromFund:String(it.fromFund || ''), toFund:String(it.toFund || ''), eventId:String(it.eventId || ''),
+      fromFund:String(it.fromFund || ''), toFund:String(it.toFund || ''), eventId:'',
       sync: it.sync === 'ok' ? 'ok' : 'pending', synced: it.synced || undefined,
       createdAt: it.createdAt || new Date().toISOString(), updatedAt: it.updatedAt || new Date().toISOString()});
     added++;
