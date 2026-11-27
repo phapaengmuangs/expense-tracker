@@ -47,21 +47,38 @@ label.l{display:block;font-size:14px;color:var(--sub);margin:16px 0 6px;font-wei
 .pie-root{--sOther:#8a9399;--s1:#257de0;--s2:#f47230;--s3:#00b894;--s4:#f2a600;--s5:#ee7fac;--s6:#008a17;--s7:#6a4ce2;--s8:#ec4647}
 @media (prefers-color-scheme: dark){:root:where(:not([data-theme="light"])) .pie-root{--sOther:#7b878b;--s1:#338ced;--s2:#e76624;--s3:#00a888;--s4:#d28e05;--s5:#e24d8b;--s6:#0aac23;--s7:#9887ef;--s8:#eb6263}}
 :root[data-theme="dark"] .pie-root{--sOther:#7b878b;--s1:#338ced;--s2:#e76624;--s3:#00a888;--s4:#d28e05;--s5:#e24d8b;--s6:#0aac23;--s7:#9887ef;--s8:#eb6263}
-.pie-wrap{display:grid;place-items:center;margin:6px 0 4px}
-.pie-wrap svg{width:min(240px,70vw);height:auto;display:block}
-.pie-wrap path{stroke:var(--card);stroke-width:2;cursor:pointer;transition:opacity .15s}
-.pie-wrap.sel path{opacity:.35}.pie-wrap.sel path.on{opacity:1}
-.pie-pick{text-align:center;font-size:14px;min-height:22px;color:var(--sub)}
-.pie-pick b{color:var(--ink);font-variant-numeric:tabular-nums}
-.lg-row summary{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;cursor:pointer;list-style:none}
+.dn-card{padding:16px 14px 6px}
+.dn-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.dn-head h2{margin:0}
+.dn-seg{display:inline-grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:999px;padding:3px;gap:2px}
+.dn-seg button{border:0;background:none;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--sub);min-height:36px}
+.dn-seg button.on{background:var(--acc);color:var(--accInk)}
+.dn-wrap{position:relative;width:min(260px,74vw);margin:14px auto 6px;aspect-ratio:1}
+.dn-wrap svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.dn-wrap path{stroke:var(--card);stroke-width:2.5;stroke-linejoin:round;cursor:pointer;transition:transform .25s ease,opacity .2s}
+.dn-wrap.sel path{opacity:.3}.dn-wrap.sel path.on{opacity:1}
+.dn-wrap .track{fill:var(--rule);stroke:none}
+.dn-mid{position:absolute;inset:22%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.dn-mid small{font-size:12px;color:var(--sub);line-height:1.3}
+.dn-mid b{font-size:clamp(20px,6.4vw,28px);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15;margin:2px 0}
+.dn-mid .chip-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.dn-mid .pct{font-size:13px;font-weight:600;color:var(--ink)}
+.dn-tip{text-align:center;font-size:12px;color:var(--sub);margin:0 0 6px}
+.lg-list{display:grid;gap:2px;margin-top:4px}
+.lg-row{border-radius:12px;transition:background .15s}
+.lg-row.on{background:color-mix(in srgb,var(--acc) 9%,transparent)}
+.lg-row summary{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:9px 8px;cursor:pointer;list-style:none}
 .lg-row summary::-webkit-details-marker{display:none}
-.lg-row{border-bottom:1px dashed var(--rule)}.lg-row:last-child{border-bottom:0}
-.lg-row .sw{width:14px;height:14px;border-radius:4px}
-.lg-row .nm{font-size:15px}.lg-row .nm small{display:block;font-size:12px;color:var(--sub)}
-.lg-row .v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:15px;font-weight:600}
-.lg-row .v small{display:block;font-weight:400;font-size:12px;color:var(--sub)}
-.lg-row.on summary{background:color-mix(in srgb,var(--acc) 8%,transparent);border-radius:8px}
-.lg-row .inner{padding:0 0 8px 22px}
+.lg-row .sw{width:12px;height:12px;border-radius:50%}
+.lg-row .nm{font-size:15px;font-weight:600}
+.lg-row .nm small{display:block;font-size:12px;font-weight:400;color:var(--sub)}
+.lg-row .v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:15px;font-weight:700}
+.lg-row .v small{display:block;font-weight:500;font-size:12px;color:var(--sub)}
+.lg-row .share{grid-column:2/-1;height:4px;border-radius:2px;background:var(--rule);overflow:hidden}
+.lg-row .share i{display:block;height:100%;border-radius:2px}
+.lg-row .inner{padding:0 8px 10px 30px}
+.lg-row .inner .drow{padding:6px 0}
+@media (prefers-reduced-motion:reduce){.dn-wrap path{transition:none}}
 .row{display:flex;gap:8px;align-items:center}
 input.f,textarea.f,select.f{width:100%;border:1px solid var(--rule);background-color:var(--card);border-radius:10px;padding:11px 12px;font-size:16px;min-height:46px}
 textarea.f{min-height:110px;font-size:14px;font-family:ui-monospace,monospace}
@@ -939,49 +956,63 @@ function renderDash(){
   <p class="hint">ข้อมูลจากชีต ณ ${t ? esc(fmtDT(toLocalInput(t))) : '-'}${n ? ` รวมรายการที่รอส่ง ${n} รายการ` : ''}</p>`;
 }
 
-/* ---------- pie of the cycle by main category ----------
+/* ---------- donut of the cycle by main category ----------
    Colour follows the category (its order in BudgetLines), never its size, so a slice keeps
-   its colour from one cycle to the next. Every slice also has a labelled legend row. */
+   its colour from one cycle to the next; "อื่นๆ" is the neutral Other. The centre shows the
+   total, or the tapped slice; every slice also has a labelled legend row with its share. */
 let pieMode = '', piePick = '';
+function arc(cx, cy, R, r, a0, a1){
+  const p = (rad, a) => `${(cx + rad*Math.cos(a)).toFixed(2)} ${(cy + rad*Math.sin(a)).toFixed(2)}`;
+  const big = a1 - a0 > Math.PI ? 1 : 0;
+  return `M ${p(R,a0)} A ${R} ${R} 0 ${big} 1 ${p(R,a1)} L ${p(r,a1)} A ${r} ${r} 0 ${big} 0 ${p(r,a0)} Z`;
+}
 function pieCard(cats, D){
   const byOrder = Object.keys(lineGroups()).filter(g => g !== 'อื่นๆ');
   const slot = g => g === 'อื่นๆ' || byOrder.indexOf(g) > 7 ? 'var(--sOther)' : 'var(--s' + (byOrder.indexOf(g) + 1) + ')';
-  const usedTotal = cats.reduce((x,c) => x + c.u, 0);
+  const usedTotal = cats.reduce((x,c) => x + Math.max(0, c.u), 0), budgetTotal = cats.reduce((x,c) => x + c.b, 0);
   const mode = pieMode || (usedTotal > 0 ? 'used' : 'budget');
   const val = c => mode === 'used' ? Math.max(0, c.u) : c.b;
   const rows = cats.map(c => ({...c, v: val(c)})).sort((a,b) => b.v - a.v);
   const total = rows.reduce((x,r) => x + r.v, 0);
-  const R = 100, cx = 110, cy = 110;
+  if(piePick && !rows.some(r => r.g === piePick && r.v > 0)) piePick = '';
+  const C = 110, R = 104, r = 66, live = rows.filter(x => x.v > 0);
   let a0 = -Math.PI/2, paths = '';
-  const live = rows.filter(r => r.v > 0);
-  live.forEach(r => {
-    const frac = r.v / total, a1 = a0 + frac * 2 * Math.PI;
-    const on = piePick === r.g ? ' on' : '';
-    if(live.length === 1){
-      paths += `<path class="${on}" data-pie="${esc(r.g)}" d="M ${cx} ${cy-R} A ${R} ${R} 0 1 1 ${cx-0.01} ${cy-R} Z" style="fill:${slot(r.g)}"><title>${esc(r.g)} ${yen(r.v)}</title></path>`;
-    } else {
-      const x0 = cx + R*Math.cos(a0), y0 = cy + R*Math.sin(a0), x1 = cx + R*Math.cos(a1), y1 = cy + R*Math.sin(a1);
-      paths += `<path class="${on}" data-pie="${esc(r.g)}" d="M ${cx} ${cy} L ${x0.toFixed(2)} ${y0.toFixed(2)} A ${R} ${R} 0 ${frac > .5 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z" style="fill:${slot(r.g)}"><title>${esc(r.g)} ${yen(r.v)} (${(frac*100).toFixed(1)}%)</title></path>`;
-    }
+  live.forEach(x => {
+    const frac = x.v / total;
+    const a1 = live.length === 1 ? a0 + 2*Math.PI - 1e-4 : a0 + frac*2*Math.PI;
+    const mid = (a0 + a1) / 2, on = piePick === x.g;
+    const shift = on ? `transform:translate(${(6*Math.cos(mid)).toFixed(2)}px,${(6*Math.sin(mid)).toFixed(2)}px)` : '';
+    paths += `<path class="${on ? 'on' : ''}" data-pie="${esc(x.g)}" d="${arc(C, C, R, r, a0, a1)}" style="fill:${slot(x.g)};${shift}"><title>${esc(x.g)} ${yen(x.v)} (${(frac*100).toFixed(1)}%)</title></path>`;
     a0 = a1;
   });
-  const pick = rows.find(r => r.g === piePick);
-  const pickTxt = pick ? `<b>${esc(pick.g)}</b> · <b>${yen(pick.v)}</b> · ${total ? (pick.v/total*100).toFixed(1) : 0}% ${mode === 'used' ? 'ของที่ใช้ไป' : 'ของงบ'} · ${leftTxt(pick.b - pick.u)}`
-    : (total ? 'แตะชิ้นพายหรือชื่อหมวดเพื่อดูรายละเอียด' : 'ยังไม่มีรายจ่ายในรอบนี้');
-  return `<div class="card pie-root"><h2>สัดส่วนตามหมวด</h2>
-    <div class="chips" id="pieMode" role="tablist">
-      <button type="button" class="chip${mode==='used'?' on':''}" data-pm="used" role="tab" aria-selected="${mode==='used'}">ใช้จริงรอบนี้ ${yen(usedTotal)}</button>
-      <button type="button" class="chip${mode==='budget'?' on':''}" data-pm="budget" role="tab" aria-selected="${mode==='budget'}">งบที่วางไว้ ${yen(cats.reduce((x,c) => x + c.b, 0))}</button>
+  const pick = rows.find(x => x.g === piePick);
+  const mid = pick
+    ? `<small><span class="chip-dot" style="background:${slot(pick.g)}"></span>${esc(pick.g)}</small><b>${yen(pick.v)}</b>
+       <span class="pct">${(pick.v/total*100).toFixed(1)}%</span><small>${leftTxt(pick.b - pick.u)}</small>`
+    : mode === 'used'
+      ? `<small>ใช้ไปรอบนี้</small><b>${yen(usedTotal)}</b><small>จากงบ ${yen(budgetTotal)}<br>${budgetTotal ? (usedTotal/budgetTotal*100).toFixed(0) : 0}% ของงบ</small>`
+      : `<small>งบที่วางไว้</small><b>${yen(budgetTotal)}</b><small>${rows.length} หมวด · รอบ ${cfg().cycle.key}</small>`;
+  return `<div class="card pie-root dn-card">
+    <div class="dn-head"><h2>สัดส่วนตามหมวด</h2>
+      <div class="dn-seg" role="tablist" aria-label="แสดงตาม">
+        <button type="button" class="${mode==='used'?'on':''}" data-pm="used" role="tab" aria-selected="${mode==='used'}">ใช้จริง</button>
+        <button type="button" class="${mode==='budget'?'on':''}" data-pm="budget" role="tab" aria-selected="${mode==='budget'}">งบ</button>
+      </div></div>
+    <div class="dn-wrap${pick ? ' sel' : ''}">
+      <svg viewBox="0 0 220 220" role="img" aria-label="สัดส่วน${mode === 'used' ? 'รายจ่าย' : 'งบ'}ตามหมวด">
+        ${total ? '' : `<path class="track" d="${arc(C, C, R, r, -Math.PI/2, 1.5*Math.PI - 1e-4)}"/>`}${paths}</svg>
+      <div class="dn-mid">${total ? mid : '<small>ยังไม่มีรายจ่าย<br>ในรอบนี้</small>'}</div>
     </div>
-    <div class="pie-wrap${piePick ? ' sel' : ''}">${total ? `<svg viewBox="0 0 220 220" role="img" aria-label="สัดส่วน${mode === 'used' ? 'รายจ่าย' : 'งบ'}ตามหมวด">${paths}</svg>` : ''}</div>
-    <div class="pie-pick">${pickTxt}</div>
-    <div>${rows.map(r => `<details class="lg-row${piePick === r.g ? ' on' : ''}" data-lg="${esc(r.g)}"${piePick === r.g ? ' open' : ''}><summary>
-        <span class="sw" style="background:${slot(r.g)}"></span>
-        <span class="nm">${esc(r.g)}<small>${mode === 'used' ? 'งบ ' + yen(r.b) + ' · ' + leftTxt(r.b - r.u) : 'ใช้ไป ' + yen(r.u)}</small></span>
-        <span class="v ${mode === 'used' && r.u > r.b ? 'over-t' : ''}">${yen(r.v)}<small>${total ? (r.v/total*100).toFixed(1) : '0.0'}%</small></span></summary>
-        <div class="inner">${r.ls.map(l => { const u = lineUsed(l, D);
+    <p class="dn-tip">${total ? (pick ? 'แตะอีกครั้งเพื่อดูภาพรวม' : 'แตะชิ้นหรือชื่อหมวดเพื่อดูรายละเอียด') : ''}</p>
+    <div class="lg-list">${rows.map(x => { const share = total ? x.v/total*100 : 0;
+      return `<details class="lg-row${piePick === x.g ? ' on' : ''}" data-lg="${esc(x.g)}"${piePick === x.g ? ' open' : ''}><summary>
+        <span class="sw" style="background:${slot(x.g)}"></span>
+        <span class="nm">${esc(x.g)}<small>${mode === 'used' ? 'งบ ' + yen(x.b) + ' · ' + leftTxt(x.b - x.u) : 'ใช้ไปแล้ว ' + yen(x.u)}</small></span>
+        <span class="v ${mode === 'used' && x.u > x.b ? 'over-t' : ''}">${yen(x.v)}<small>${share.toFixed(1)}%</small></span>
+        <span class="share"><i style="width:${share.toFixed(1)}%;background:${slot(x.g)}"></i></span></summary>
+        <div class="inner">${x.ls.map(l => { const u = lineUsed(l, D);
           return `<div class="drow"><div class="top"><span>${esc(l.item)}</span><span class="${u > l.budget ? 'over-t' : ''}">${leftTxt(l.budget - u)}</span></div>${meter(u, l.budget)}<div class="sub">${yen(u)} / ${yen(l.budget)} · ${esc(l.channel)}</div></div>`; }).join('')}</div>
-      </details>`).join('')}</div>
+      </details>`; }).join('')}</div>
   </div>`;
 }
 $('#dash').addEventListener('click', e => {
