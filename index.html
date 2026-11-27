@@ -44,9 +44,9 @@ label.l{display:block;font-size:14px;color:var(--sub);margin:16px 0 6px;font-wei
 .amtbox .amt input{font-size:56px;line-height:1.1}
 .amtbox .amt input::placeholder{color:color-mix(in srgb,var(--acc) 35%,transparent)}
 .amtbox:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 25%,transparent)}
-.pie-root{--s1:#257de0;--s2:#f47230;--s3:#00b894;--s4:#f2a600;--s5:#ee7fac;--s6:#008a17;--s7:#6a4ce2;--s8:#ec4647}
-@media (prefers-color-scheme: dark){:root:where(:not([data-theme="light"])) .pie-root{--s1:#338ced;--s2:#e76624;--s3:#00a888;--s4:#d28e05;--s5:#e24d8b;--s6:#0aac23;--s7:#9887ef;--s8:#eb6263}}
-:root[data-theme="dark"] .pie-root{--s1:#338ced;--s2:#e76624;--s3:#00a888;--s4:#d28e05;--s5:#e24d8b;--s6:#0aac23;--s7:#9887ef;--s8:#eb6263}
+.pie-root{--sOther:#8a9399;--s1:#257de0;--s2:#f47230;--s3:#00b894;--s4:#f2a600;--s5:#ee7fac;--s6:#008a17;--s7:#6a4ce2;--s8:#ec4647}
+@media (prefers-color-scheme: dark){:root:where(:not([data-theme="light"])) .pie-root{--sOther:#7b878b;--s1:#338ced;--s2:#e76624;--s3:#00a888;--s4:#d28e05;--s5:#e24d8b;--s6:#0aac23;--s7:#9887ef;--s8:#eb6263}}
+:root[data-theme="dark"] .pie-root{--sOther:#7b878b;--s1:#338ced;--s2:#e76624;--s3:#00a888;--s4:#d28e05;--s5:#e24d8b;--s6:#0aac23;--s7:#9887ef;--s8:#eb6263}
 .pie-wrap{display:grid;place-items:center;margin:6px 0 4px}
 .pie-wrap svg{width:min(240px,70vw);height:auto;display:block}
 .pie-wrap path{stroke:var(--card);stroke-width:2;cursor:pointer;transition:opacity .15s}
@@ -205,6 +205,14 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <div id="fFund"><label class="l" for="inFund" id="fFundL">กอง</label><select class="f" id="inFund"></select></div>
       <div class="amtbox"><label for="inAmt">จำนวนเงิน</label>
         <div class="amt"><span>¥</span><input id="inAmt" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="จำนวนเงิน"></div></div>
+      <div id="fFeeW">
+        <button type="button" class="btn sm" id="feeToggle" style="margin-top:8px">+ ค่าธรรมเนียม</button>
+        <div id="feeBox" hidden>
+          <label class="l" for="inFee">ค่าธรรมเนียม</label>
+          <div class="row"><input class="f" id="inFee" inputmode="numeric" pattern="[0-9]*" placeholder="เช่น 203"><button type="button" class="btn sm" id="feeOff">เอาออก</button></div>
+          <p class="hint" id="feeHint"></p>
+        </div>
+      </div>
       <label class="l" for="inNote">หมายเหตุ (ไม่บังคับ)</label>
       <input class="f" id="inNote" placeholder="เช่น หมู, ผัก">
       <label class="l" for="inTime-d">วันและเวลา (24 ชั่วโมง)</label>
@@ -335,6 +343,7 @@ details.dl[open] summary .top span:first-child::after{content:' ▴'}
       <div id="edToW"><label class="l" for="edTo">ไปบัญชี</label><select class="f" id="edTo"></select></div>
       <div id="edFundW"><label class="l" for="edFund">กอง</label><select class="f" id="edFund"></select></div>
       <div id="edEventW"><label class="l" for="edEvent">เหตุการณ์ตามแผน</label><select class="f" id="edEvent"></select></div>
+      <div id="edFeeW"><label class="l" for="edFee">ค่าธรรมเนียม (เว้นว่าง = ไม่มี)</label><input class="f" id="edFee" inputmode="numeric" pattern="[0-9]*" placeholder="0"><p class="hint" id="edFeeHint"></p></div>
       <label class="l" for="edNote">หมายเหตุ</label>
       <input class="f" id="edNote">
       <label class="l" for="edTime-d">วันและเวลา (24 ชั่วโมง)</label>
@@ -472,9 +481,23 @@ function localDelta(extra){
   const a = {line:{}, acc:{}, fund:{}, done:new Set()};
   pending().forEach(i => { effect(i, 1, a); effect(i.synced, -1, a); });
   (db.sheet ? db.sheet.deletes : []).forEach(d => effect(d.synced, -1, a));
-  if(extra) effect(extra, 1, a);
+  if(extra) [].concat(extra).forEach(x => effect(x, 1, a));
   return a;
 }
+/* A fee is its own row, paired with the entry it belongs to (feeOf / feeId), so every sheet
+   formula keeps summing correctly. A one-time payment's fee comes out of the same fund and event;
+   any other fee goes to the budget item "ค่าธรรมเนียม" from the account the money left. */
+const feeLine = () => ((cfg() && cfg().lines) || []).find(l => l.item === 'ค่าธรรมเนียม');
+const canFee = t => t === 'one_time' || ((t === 'expense' || t === 'transfer' || t === 'income') && !!feeLine());
+function feeFor(main, amount, parentId){
+  const base = {type:'expense', lineId: feeLine() ? feeLine().id : '', amount, ts:main.ts, note:'ของ ' + main.category,
+    from:'', to:'', fromFund:'', toFund:'', eventId:'', category:'ค่าธรรมเนียม', feeOf:parentId};
+  if(main.type === 'one_time') return {...base, type:'one_time', lineId:'', from:main.from, fromFund:main.fromFund, eventId:main.eventId, category:'ค่าธรรมเนียม · ' + main.category};
+  if(main.type === 'income') return {...base, from:main.to};
+  return {...base, from:main.from};       // expense: same account · transfer: the source account
+}
+const feeWhere = main => main.type === 'one_time' ? `จ่ายจากกอง${fundName(main.fromFund)}เดียวกัน${main.eventId ? ' ผูกเหตุการณ์เดียวกัน' : ''}`
+  : `ลงรายการงบ ค่าธรรมเนียม · จาก${accName(main.type === 'income' ? main.to : main.from) || 'บัญชีที่เลือก'}`;
 const lineUsed = (l, D) => l.spent + (D.line[l.id] || 0);
 const accBal = (a, D) => a.balance + (D.acc[a.id] || 0);
 const fundBal = (f, D) => f.balance + (D.fund[f.id] || 0);
@@ -509,7 +532,7 @@ function renderAll(){
 }
 
 /* ================= Input ================= */
-const sx = {type:'expense', cat:'', line:null, from:'', to:'', fund:'', event:''};
+const sx = {type:'expense', cat:'', line:null, from:'', to:'', fund:'', event:'', feeOn:false};
 let timeManual = false;
 const accOpts = (cur, D, skip, blank) => (blank ? `<option value="">${blank}</option>` : '') +
   accList().filter(a => a.id !== skip).map(a => `<option value="${esc(a.id)}"${cur===a.id?' selected':''}>${esc(a.name)} · ${yen(accBal(a, D))}</option>`).join('');
@@ -546,6 +569,9 @@ function renderInput(){
   $('#fTo').hidden = !(t === 'transfer' || t === 'income');
   $('#fEvent').hidden = $('#fFund').hidden = !(t === 'one_time' || t === 'income');
   $('#fFundL').textContent = t === 'one_time' ? 'จ่ายจากกอง' : 'เข้ากอง (ไม่บังคับ)';
+  $('#fFeeW').hidden = !canFee(t);
+  $('#feeBox').hidden = !sx.feeOn; $('#feeToggle').hidden = !!sx.feeOn;
+  $('#feeHint').textContent = feeWhere({type:t, from:sx.from, to:sx.to, fromFund:sx.fund, eventId:sx.event});
   refreshLiveTime();
 }
 /* Leftover for the chosen item, or for the whole main category before an item is chosen */
@@ -585,6 +611,8 @@ $('#inEvent').onchange = e => {
   if(ev){ sx.fund = ev.fund; if(!$('#inAmt').value) $('#inAmt').value = ev.amount; }
   renderInput();
 };
+$('#feeToggle').onclick = () => { sx.feeOn = true; renderInput(); $('#inFee').focus(); };
+$('#feeOff').onclick = () => { sx.feeOn = false; $('#inFee').value = ''; renderInput(); };
 $('#fPreset').onclick = e => { const b = e.target.closest('[data-pf]'); if(!b) return; sx.from = b.dataset.pf; sx.to = b.dataset.pt; renderInput(); };
 
 function refreshLiveTime(){
@@ -603,6 +631,11 @@ function draftFromForm(){
   const amount = parseAmt($('#inAmt').value), ts = getDT($('#inTime')), note = $('#inNote').value.trim(), t = sx.type;
   const ev = sx.event ? cfg().events.find(x => x.id === sx.event) : null;
   if(!(amount > 0)) return {err:'กรุณากรอกจำนวนเงินเป็นตัวเลขจำนวนเต็มมากกว่า 0'};
+  let fee = 0;
+  if(sx.feeOn && canFee(t) && $('#inFee').value.trim() !== ''){
+    fee = parseAmt($('#inFee').value);
+    if(!(fee > 0)) return {err:'ค่าธรรมเนียมต้องเป็นตัวเลขจำนวนเต็มมากกว่า 0 (หรือกด เอาออก)'};
+  }
   if(!ts || isNaN(parseTs(ts))) return {err:'วันและเวลาไม่ถูกต้อง'};
   const it = {type:t, amount, ts, note, lineId:'', from:'', to:'', fromFund:'', toFund:'', eventId:'', category:''};
   if(t === 'expense'){
@@ -620,19 +653,21 @@ function draftFromForm(){
     if(!sx.fund) return {err:'กรุณาเลือกกองที่จ่าย'};
     Object.assign(it, {from:sx.from, fromFund:sx.fund, eventId:sx.event, category: ev ? ev.name : 'จ่ายจากกอง ' + fundName(sx.fund)});
   }
-  return {item:it};
+  return {item:it, fee};
 }
 let draft = null;
 $('#fIn').onsubmit = e => {
   e.preventDefault();
   const r = draftFromForm();
   $('#inErr').textContent = r.err || ''; if(r.err) return;
-  showReview(r.item, true);
+  showReview(r.item, true, r.fee);
 };
 let draftFromForm_ = false;
-function showReview(it, fromForm){
-  draft = it; draftFromForm_ = !!fromForm;
-  const D0 = localDelta(), D1 = localDelta(it);
+let draftFee = 0;
+function showReview(it, fromForm, fee){
+  draft = it; draftFromForm_ = !!fromForm; draftFee = fee || 0;
+  const feeIt = draftFee ? feeFor(it, draftFee, '') : null;
+  const D0 = localDelta(), D1 = localDelta(feeIt ? [it, feeIt] : it);
   const rows = [['ประเภท', TYPE_NAME[it.type]], ['ยอด', `<span class="amtv">${yen(it.amount)}</span>`]];
   if(it.type === 'expense'){ const l = lineOf(it.lineId); rows.push(['รายการงบ', `${esc(l.category)} · ${esc(l.item)}`]); }
   else rows.push(['รายการ', esc(it.category)]);
@@ -640,6 +675,10 @@ function showReview(it, fromForm){
   if(it.to) rows.push([it.type === 'adjust' ? 'เพิ่มยอดบัญชี' : 'ไปบัญชี', esc(accName(it.to))]);
   if(it.fromFund) rows.push(['จากกอง', esc(fundName(it.fromFund))]);
   if(it.toFund) rows.push(['เข้ากอง', esc(fundName(it.toFund))]);
+  if(feeIt){
+    rows.push(['ค่าธรรมเนียม', `${yen(draftFee)} · ${esc(feeWhere(it))}`]);
+    rows.push(['รวมจ่ายทั้งหมด', `<b>${yen(it.amount + draftFee)}</b>`]);
+  }
   rows.push(['วันเวลา', esc(fmtDT(it.ts))]);
   if(it.note) rows.push(['หมายเหตุ', esc(it.note)]);
   $('#rvBody').innerHTML = rows.map(([k,v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
@@ -649,6 +688,9 @@ function showReview(it, fromForm){
     const l = lineOf(it.lineId);
     if(cycleKeyOf(it.ts) === cfg().cycle.key) imp.push([`งบ ${l.item}`, `${leftTxt(l.budget - lineUsed(l, D0))} → ${leftTxt(l.budget - lineUsed(l, D1))}`]);
     else imp.push([`งบ ${l.item}`, `นับในรอบ ${cycleKeyOf(it.ts)} (ไม่ใช่รอบปัจจุบัน)`]);
+  }
+  if(feeIt && feeIt.type === 'expense'){
+    const fl = feeLine(); if(fl) imp.push([`งบ ${fl.item}`, `${leftTxt(fl.budget - lineUsed(fl, D0))} → ${leftTxt(fl.budget - lineUsed(fl, D1))}`]);
   }
   [it.from, it.to].filter(Boolean).forEach(id => {
     const a = accList().find(x => x.id === id); if(a) imp.push([a.name, `${yen(accBal(a, D0))} → ${yen(accBal(a, D1))}`]);
@@ -663,17 +705,19 @@ function showReview(it, fromForm){
 $('#rvBack').onclick = () => closeM('#mReview');
 $('#rvOk').onclick = () => {
   if(!draft) return;
-  const now = new Date().toISOString();
-  db.items.push({id:uid(), ...draft, sync:'pending', createdAt:now, updatedAt:now});
+  const now = new Date().toISOString(), mainId = uid();
+  const main = {id:mainId, ...draft, sync:'pending', createdAt:now, updatedAt:now};
+  if(draftFee){ const f = {id:uid(), ...feeFor(draft, draftFee, mainId), sync:'pending', createdAt:now, updatedAt:now}; main.feeId = f.id; db.items.push(main, f); }
+  else db.items.push(main);
   if(!persist()) return;
-  const saved = draft; draft = null; closeM('#mReview');
+  const saved = draft, savedFee = draftFee; draft = null; draftFee = 0; closeM('#mReview');
   if(draftFromForm_){                     // a wallet check leaves the half-filled form alone
-    $('#inAmt').value = ''; $('#inNote').value = '';
+    $('#inAmt').value = ''; $('#inNote').value = ''; $('#inFee').value = ''; sx.feeOn = false;
     sx.event = ''; if(sx.type !== 'transfer') sx.fund = '';
     if((lineGroups()[sx.cat] || []).length !== 1) sx.line = null;
   }
   renderAll();
-  toast(`บันทึกในเครื่องแล้ว: ${saved.category} ${yen(saved.amount)} · รอส่ง ${queueSize()} รายการ`);
+  toast(`บันทึกในเครื่องแล้ว: ${saved.category} ${yen(saved.amount)}${savedFee ? ' + ค่าธรรมเนียม ' + yen(savedFee) : ''} · รอส่ง ${queueSize()} รายการ`);
 };
 
 /* ================= Sheet sync (only when the user asks) ================= */
@@ -900,8 +944,8 @@ function renderDash(){
    its colour from one cycle to the next. Every slice also has a labelled legend row. */
 let pieMode = '', piePick = '';
 function pieCard(cats, D){
-  const byOrder = Object.keys(lineGroups());
-  const slot = g => 'var(--s' + (Math.min(byOrder.indexOf(g), 7) + 1) + ')';
+  const byOrder = Object.keys(lineGroups()).filter(g => g !== 'อื่นๆ');
+  const slot = g => g === 'อื่นๆ' || byOrder.indexOf(g) > 7 ? 'var(--sOther)' : 'var(--s' + (byOrder.indexOf(g) + 1) + ')';
   const usedTotal = cats.reduce((x,c) => x + c.u, 0);
   const mode = pieMode || (usedTotal > 0 ? 'used' : 'budget');
   const val = c => mode === 'used' ? Math.max(0, c.u) : c.b;
@@ -1050,15 +1094,22 @@ $('#hList').onclick = e => {
   const d = e.target.closest('[data-del]'), ed = e.target.closest('[data-ed]');
   if(ed) return openEdit(ed.dataset.ed);
   if(!d) return;
-  const idx = db.items.findIndex(i => i.id === d.dataset.del); if(idx < 0) return;
-  const [gone] = db.items.splice(idx, 1);
+  const it = db.items.find(i => i.id === d.dataset.del); if(!it) return;
+  // deleting an entry takes its fee with it; deleting a fee leaves the entry
+  const fee = it.feeId ? db.items.find(i => i.id === it.feeId) : null;
+  const parent = it.feeOf ? db.items.find(i => i.id === it.feeOf) : null;
+  const gone = [it, fee].filter(Boolean);
+  db.items = db.items.filter(i => !gone.includes(i));
+  if(parent) delete parent.feeId;
   // something the sheet already has must be deleted there on the next push
-  const queued = gone.synced ? {id:gone.id, category:gone.category, amount:gone.synced.amount, ts:gone.synced.ts, synced:gone.synced} : null;
-  if(queued) db.sheet.deletes.push(queued);
+  const queued = gone.filter(g => g.synced).map(g => ({id:g.id, category:g.category, amount:g.synced.amount, ts:g.synced.ts, synced:g.synced}));
+  db.sheet.deletes.push(...queued);
   persist(); renderAll();
-  toast(`ลบ ${gone.category} ${yen(gone.amount)} แล้ว${queued ? ' · ลบในชีตเมื่อกดส่ง' : ''}`, 'เลิกทำ', () => {
-    db.items.push(gone);
-    if(queued) db.sheet.deletes = db.sheet.deletes.filter(x => x.id !== gone.id);
+  toast(`ลบ ${it.category} ${yen(it.amount)}${fee ? ' พร้อมค่าธรรมเนียม' : ''}${queued.length ? ' · ลบในชีตเมื่อกดส่ง' : ''}`, 'เลิกทำ', () => {
+    db.items.push(...gone);
+    if(parent) parent.feeId = it.id;
+    const ids = new Set(queued.map(q => q.id));
+    db.sheet.deletes = db.sheet.deletes.filter(x => !ids.has(x.id));
     persist(); renderAll();
   });
 };
@@ -1080,6 +1131,10 @@ function openEdit(id){
   $('#edFundW').hidden = !(t === 'one_time' || t === 'income');
   $('#edFund').innerHTML = fundOpts(t === 'one_time' ? it.fromFund : it.toFund, D, t === 'one_time' ? 'เลือกกอง' : 'ไม่เข้ากอง');
   $('#edEventW').hidden = !(t === 'one_time' || t === 'income');
+  const fee = it.feeId ? db.items.find(i => i.id === it.feeId) : null;
+  $('#edFeeW').hidden = !!it.feeOf || !canFee(t);
+  $('#edFee').value = fee ? fee.amount : '';
+  $('#edFeeHint').textContent = it.feeOf ? '' : feeWhere(it);
   const kind = t === 'one_time' ? 'จ่าย' : 'รับ';
   const evs = cfg().events.filter(e => e.kind === kind && (e.id === it.eventId || (!e.done && !D.done.has(e.id))));
   $('#edEvent').innerHTML = '<option value="">ไม่ผูกกับเหตุการณ์</option>' +
@@ -1105,8 +1160,24 @@ $('#fEd').onsubmit = e => {
   if(t === 'income') Object.assign(it, {to, toFund:fund, eventId:ev, category:'รับเงิน ' + (evObj ? evObj.name : accName(to))});
   if(t === 'one_time') Object.assign(it, {from, fromFund:fund, eventId:ev, category: evObj ? evObj.name : 'จ่ายจากกอง ' + fundName(fund)});
   it.sync = 'pending'; delete it.syncError;
+  // keep the paired fee in step: create, update or remove it
+  let feeMsg = '';
+  if(!it.feeOf && canFee(t)){
+    const raw = $('#edFee').value.trim(), feeAmt = raw === '' ? 0 : parseAmt(raw);
+    if(raw !== '' && !(feeAmt > 0)){ $('#edErr').textContent = 'ค่าธรรมเนียมต้องเป็นตัวเลขจำนวนเต็มมากกว่า 0 หรือเว้นว่าง'; return; }
+    const old = it.feeId ? db.items.find(i => i.id === it.feeId) : null, now = new Date().toISOString();
+    if(feeAmt > 0){
+      const f = feeFor(it, feeAmt, it.id);
+      if(old){ Object.assign(old, f, {sync:'pending', updatedAt:now}); delete old.syncError; }
+      else { const n = {id:uid(), ...f, sync:'pending', createdAt:now, updatedAt:now}; db.items.push(n); it.feeId = n.id; feeMsg = ' + เพิ่มค่าธรรมเนียม ' + yen(feeAmt); }
+    } else if(old){
+      db.items = db.items.filter(i => i !== old);
+      if(old.synced) db.sheet.deletes.push({id:old.id, category:old.category, amount:old.synced.amount, ts:old.synced.ts, synced:old.synced});
+      delete it.feeId; feeMsg = ' · เอาค่าธรรมเนียมออก';
+    }
+  }
   persist(); closeM('#mEdit'); renderAll();
-  toast('แก้ไขแล้ว · จะเปลี่ยนในชีตเมื่อกดส่ง');
+  toast('แก้ไขแล้ว' + feeMsg + ' · จะเปลี่ยนในชีตเมื่อกดส่ง');
 };
 
 /* ================= Settings ================= */
